@@ -21,16 +21,28 @@ def get_genre(song_title, artist):
     response = requests.get(search_url)
     soup = BeautifulSoup(response.content, 'html.parser')
 
+    print(soup)
+
     # 검색 결과에서 첫 번째 곡 정보 페이지로 이동
-    first_song_link = soup.find('a', {'class': 'title ellipsis'}).get('href')
-    song_page_url = f"https://www.genie.co.kr{first_song_link}"
+    first_tr = soup.find('tbody').find('tr', class_='list')
+    if first_tr:
+        songid = first_tr.get('songid')
+        print("첫 번째 검색 결과의 songid:", songid)
+    else:
+        print("검색 결과가 없습니다.")
+    song_page_url = f"https://www.genie.co.kr/detail/songInfo?xgnm={songid}"
 
     # 곡 정보 페이지 요청
     response = requests.get(song_page_url)
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # 장르 정보 가져오기
-    genre = soup.find('dt', text='장르').find_next_sibling('dd').text.strip()
+    genre_element = soup.find('img', alt='장르')
+    if genre_element:
+        genre = genre_element.find_next_sibling('span', class_='value').text.strip()
+        print("장르 정보:", genre)
+    else:
+        print("장르 정보를 찾을 수 없습니다.")
     return genre
 
 # CSV 파일에 장르 정보를 저장하는 함수
