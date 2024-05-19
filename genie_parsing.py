@@ -16,11 +16,11 @@ def read_csv(filename):
 # CSV 파일에 장르 정보를 저장하는 함수
 def save_to_csv(songs_with_genre, output_filename):
     with open(output_filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
-        fieldnames = ['song_id', 'song_title', 'artist', 'genre']
+        fieldnames = ['song_id', 'song_title', 'artist', 'genre', 'album_image_url']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for song in songs_with_genre:
-            writer.writerow({'song_id': song[0], 'song_title': song[1], 'artist': song[2], 'genre': song[3]})
+            writer.writerow({'song_id': song[0], 'song_title': song[1], 'artist': song[2], 'genre': song[3], 'album_image_url': song[4]})
 
 
 # Genie 사이트에서 곡 정보를 가져오는 함수
@@ -71,7 +71,7 @@ def parsing(song_title, artist):
 
             if finding_artist_span:
                 finding_artist = finding_artist_span.get_text(strip=True)
-                print("가수 정보:", finding_artist)
+                print("가수 정보: ", finding_artist)
             else:
                 print("가수 정보를 찾을 수 없습니다.")
 
@@ -86,12 +86,24 @@ def parsing(song_title, artist):
 
             if genre_span:
                 genre = genre_span.get_text(strip=True)
-                print("장르 정보:", genre)
+                print("장르 정보: ", genre)
             else:
                 print("장르 정보를 찾을 수 없습니다.")
     else:
         print("장르 정보를 찾을 수 없습니다.")
-    return songid, finding_title, finding_artist, genre
+
+    # 앨범 이미지 url 가져오기
+    album_image_element = soup.find('a', class_='album2-thumb')
+
+    album_image_url = None
+    if album_image_element:
+        album_image_url = album_image_element.get('href')
+        album_image_url = album_image_url[2:] # 시작 부분 // 제거
+        print("앨범 이미지 URL: ", album_image_url)
+    else:
+        print("앨범 이미지 정보를 찾을 수 없습니다.")
+    
+    return songid, finding_title, finding_artist, genre, album_image_url
 
 
 if __name__ == "__main__":
@@ -102,8 +114,8 @@ if __name__ == "__main__":
     songs_with_genre = []
     for song_title, artist in songs:
         print("찾을 대상: ", song_title, artist)
-        song_id, finding_title, finding_artist, genre = parsing(song_title, artist)
-        songs_with_genre.append((song_id, finding_title, finding_artist, genre))
+        song_id, finding_title, finding_artist, genre, album_image_url = parsing(song_title, artist)
+        songs_with_genre.append((song_id, finding_title, finding_artist, genre, album_image_url))
 
         print("-----------------------------------------------------------------")
 
