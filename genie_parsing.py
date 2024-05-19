@@ -34,20 +34,29 @@ def parsing(song_title, artist):
     response = requests.get(search_url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
 
+    if not soup:
+        print("1차 HTTP 응답 오류", end='')
+        return tuple("HTTP error" for _ in range(5))
 
     # 검색 결과에서 첫 번째 곡 정보 페이지로 이동
-    first_tr = soup.find('tbody').find('tr', class_='list')
+    first_tr = soup.find('tr', class_='list')
     songid = None
     if first_tr:
         songid = first_tr.get('songid')
-        print("첫 번째 검색 결과의 songid:", songid)
+        print("첫 번째 검색 결과:", songid, end=' / ')
     else:
-        print("검색 결과가 없습니다.")
+        print("검색 결과가 없습니다.", end=' / ')
+        return tuple("Unknown" for _ in range(5))
+
     song_page_url = f"https://www.genie.co.kr/detail/songInfo?xgnm={songid}"
 
     # 곡 정보 페이지 요청
     response = requests.get(song_page_url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
+
+    if not soup:
+        print("2차 HTTP 응답 오류", end='')
+        return tuple("HTTP error" for _ in range(5))
 
     # 노래 제목 가져오기
     finding_title_element = soup.find('h2', class_='name')
@@ -55,9 +64,9 @@ def parsing(song_title, artist):
     finding_title = None
     if finding_title_element:
         finding_title = finding_title_element.get_text(strip=True)
-        print("노래 제목: ", finding_title)
+        print(finding_title, end=' / ')
     else:
-        print("노래 제목을 찾을 수 없습니다.")
+        print("제목X", end=' / ')
 
     # 가수 가져오기
     info_data_class = soup.find('ul', class_='info-data')
@@ -71,9 +80,9 @@ def parsing(song_title, artist):
 
             if finding_artist_span:
                 finding_artist = finding_artist_span.get_text(strip=True)
-                print("가수 정보: ", finding_artist)
+                print(finding_artist, end=' / ')
             else:
-                print("가수 정보를 찾을 수 없습니다.")
+                print("가수X", end=' / ')
 
     # 장르 정보 가져오기
     genre_element = soup.find('img', alt='장르')
@@ -86,11 +95,11 @@ def parsing(song_title, artist):
 
             if genre_span:
                 genre = genre_span.get_text(strip=True)
-                print("장르 정보: ", genre)
+                print(genre, end=' / ')
             else:
-                print("장르 정보를 찾을 수 없습니다.")
+                print("장르X", end=' / ')
     else:
-        print("장르 정보를 찾을 수 없습니다.")
+        print("장르X", end=' / ')
 
     # 앨범 이미지 url 가져오기
     album_image_element = soup.find('a', class_='album2-thumb')
@@ -99,25 +108,25 @@ def parsing(song_title, artist):
     if album_image_element:
         album_image_url = album_image_element.get('href')
         album_image_url = album_image_url[2:] # 시작 부분 // 제거
-        print("앨범 이미지 URL: ", album_image_url)
+        print(album_image_url, end=' / ')
     else:
-        print("앨범 이미지 정보를 찾을 수 없습니다.")
+        print("앨범이미지X", end=' / ')
     
     return songid, finding_title, finding_artist, genre, album_image_url
 
 
 if __name__ == "__main__":
     # CSV 파일에서 노래 제목과 가수 이름을 읽어옵니다.
-    songs = read_csv('song_genre_test.csv')
+    songs = read_csv('song_2.csv')
 
     # 각 곡에 대한 장르 정보를 가져옵니다.
     songs_with_genre = []
     for song_title, artist in songs:
-        print("찾을 대상: ", song_title, artist)
+        print("찾을 대상: ", song_title, artist, end=' - ')
         song_id, finding_title, finding_artist, genre, album_image_url = parsing(song_title, artist)
         songs_with_genre.append((song_id, finding_title, finding_artist, genre, album_image_url))
 
-        print("-----------------------------------------------------------------")
+        print()
 
     # 결과를 CSV 파일로 저장합니다.
-    save_to_csv(songs_with_genre, 'songs_with_genre.csv')
+    save_to_csv(songs_with_genre, 'song_info.csv')
