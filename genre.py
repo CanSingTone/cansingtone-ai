@@ -16,11 +16,11 @@ def read_csv(filename):
 # CSV 파일에 장르 정보를 저장하는 함수
 def save_to_csv(songs_with_genre, output_filename):
     with open(output_filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
-        fieldnames = ['song_title', 'artist', 'genre']
+        fieldnames = ['song_id', 'song_title', 'artist', 'genre']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for song in songs_with_genre:
-            writer.writerow({'song_title': song[0], 'artist': song[1], 'genre': song[2]})
+            writer.writerow({'song_id': song[0], 'song_title': song[1], 'artist': song[2], 'genre': song[3]})
 
 
 # Genie 사이트에서 곡 정보를 가져오는 함수
@@ -51,6 +51,7 @@ def parsing(song_title, artist):
 
     # 노래 제목 가져오기
     finding_title_element = soup.find('h2', class_='name')
+
     finding_title = None
     if finding_title_element:
         finding_title = finding_title_element.get_text(strip=True)
@@ -59,16 +60,20 @@ def parsing(song_title, artist):
         print("노래 제목을 찾을 수 없습니다.")
 
     # 가수 가져오기
-    artist_li_tag = soup.find('li')
-    finding_artist = None
-    if artist_li_tag:
-        finding_artist_span = artist_li_tag.find('span', class_='value')
+    info_data_class = soup.find('ul', class_='info-data')
 
-        if finding_artist_span:
-            finding_artist = finding_artist_span.get_text(strip=True)
-            print("가수 정보:", finding_artist)
-        else:
-            print("가수 정보를 찾을 수 없습니다.")
+    finding_artist = None
+    if info_data_class:
+        li_tag = info_data_class.find('li')
+        
+        if li_tag:
+            finding_artist_span = li_tag.find('span', class_='value')
+
+            if finding_artist_span:
+                finding_artist = finding_artist_span.get_text(strip=True)
+                print("가수 정보:", finding_artist)
+            else:
+                print("가수 정보를 찾을 수 없습니다.")
 
     # 장르 정보 가져오기
     genre_element = soup.find('img', alt='장르')
@@ -86,20 +91,21 @@ def parsing(song_title, artist):
                 print("장르 정보를 찾을 수 없습니다.")
     else:
         print("장르 정보를 찾을 수 없습니다.")
-    return songid, genre
+    return songid, finding_title, finding_artist, genre
 
 
 if __name__ == "__main__":
     # CSV 파일에서 노래 제목과 가수 이름을 읽어옵니다.
     songs = read_csv('song_genre_test.csv')
-    print(songs)
 
     # 각 곡에 대한 장르 정보를 가져옵니다.
     songs_with_genre = []
     for song_title, artist in songs:
-        print(song_title, artist)
-        song_id, genre = parsing(song_title, artist)
-        songs_with_genre.append((song_title, artist, genre))
+        print("찾을 대상: ", song_title, artist)
+        song_id, finding_title, finding_artist, genre = parsing(song_title, artist)
+        songs_with_genre.append((song_id, finding_title, finding_artist, genre))
+
+        print("-----------------------------------------------------------------")
 
     # 결과를 CSV 파일로 저장합니다.
     save_to_csv(songs_with_genre, 'songs_with_genre.csv')
