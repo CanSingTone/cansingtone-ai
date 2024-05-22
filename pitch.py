@@ -1,13 +1,70 @@
 import librosa
 import os
 import numpy as np
+import mido
 
+
+def midi_to_note_name(midi_note):
+    note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    octave = midi_note // 12 - 1
+    note = note_names[midi_note % 12]
+    return f"{note}{octave}"
+
+
+def mp3_to_mid(mp3_file_path):
+    mid_file_path = mp3_file_path
+    return mid_file_path
+
+
+def pitch_processing(file_path):
+    mid_file = mp3_to_mid(file_path)
+    midi = mido.MidiFile(mid_file)
+
+    # 노이즈로 간주되는 노트 제거 (예: 매우 짧은 노트 등)
+    cleaned_tracks = []
+    for track in midi.tracks:
+        new_track = mido.MidiTrack()
+        for msg in track:
+            # 예시: 노트 길이가 짧은 경우 노이즈로 간주
+            if msg.type == 'note_on' and msg.velocity > 0 and msg.time > 5:
+                new_track.append(msg)
+        cleaned_tracks.append(new_track)
+
+    new_midi = mido.MidiFile()
+    for track in cleaned_tracks:
+        new_midi.tracks.append(track)
+
+    # 모든 노트 이벤트에서 피치 정보 추출
+    pitches = []
+    threshold = 52
+    print(f"threshold: {threshold}")
+
+    for i, track in enumerate(new_midi.tracks):
+        for msg in track:
+            if msg.type == 'note_on' and msg.velocity > threshold:
+                pitches.append(msg.note)
+
+    # 최고 음과 최저 음 계산
+    max_pitch = max(pitches)
+    min_pitch = min(pitches)
+
+    # MIDI 값을 음정 이름으로 변환
+    max_pitch_note = midi_to_note_name(max_pitch)
+    min_pitch_note = midi_to_note_name(min_pitch)
+
+    print(f"최고 음 (MIDI): {max_pitch} -> 음정: {max_pitch_note}")
+    print(f"최저 음 (MIDI): {min_pitch} -> 음정: {min_pitch_note}")
+
+
+
+"""
 # 오디오 파일 로드
 sample_folder = "sample_data"
 audio_file = "벤_꿈처럼_gaudiolab_vocal_stretch.mp3"
 sample_path = os.path.join(sample_folder, audio_file)
 y, sr = librosa.load(sample_path)
-"""
+
+
 # 주파수 스펙트럼 분석
 D = librosa.stft(y)
 mag = librosa.amplitude_to_db(abs(D))
@@ -56,53 +113,8 @@ print("최저 음:", min_pitch_note)
 """
 
 
-import mido
 
 
-def midi_to_note_name(midi_note):
-    note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-    octave = midi_note // 12 - 1
-    note = note_names[midi_note % 12]
-    return f"{note}{octave}"
 
 
-# MIDI 파일 로드
-midi_file = '1_1_1_벤_꿈처럼_(Vocals)_(Vocals)_(No Reverb).mp3.mid'
-sample_path = os.path.join(sample_folder, midi_file)
-midi = mido.MidiFile(sample_path)
-
-# 노이즈로 간주되는 노트 제거 (예: 매우 짧은 노트 등)
-cleaned_tracks = []
-for track in midi.tracks:
-    new_track = mido.MidiTrack()
-    for msg in track:
-        # 예시: 노트 길이가 짧은 경우 노이즈로 간주
-        if msg.type == 'note_on' and msg.velocity > 0 and msg.time > 5:
-            new_track.append(msg)
-    cleaned_tracks.append(new_track)
-
-new_midi = mido.MidiFile()
-for track in cleaned_tracks:
-    new_midi.tracks.append(track)
-
-# 모든 노트 이벤트에서 피치 정보 추출
-pitches = []
-threshold = 52
-print(f"threshold: {threshold}")
-
-for i, track in enumerate(new_midi.tracks):
-    for msg in track:
-        if msg.type == 'note_on' and msg.velocity > threshold:
-            pitches.append(msg.note)
-
-# 최고 음과 최저 음 계산
-max_pitch = max(pitches)
-min_pitch = min(pitches)
-
-# MIDI 값을 음정 이름으로 변환
-max_pitch_note = midi_to_note_name(max_pitch)
-min_pitch_note = midi_to_note_name(min_pitch)
-
-print(f"최고 음 (MIDI): {max_pitch} -> 음정: {max_pitch_note}")
-print(f"최저 음 (MIDI): {min_pitch} -> 음정: {min_pitch_note}")
 
