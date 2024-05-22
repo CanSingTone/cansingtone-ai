@@ -37,7 +37,7 @@ def parsing(song_title, artist):
 
     if not soup:
         print("검색 페이지 HTTP 응답 오류", end='')
-        return tuple("search HTTP error" for _ in range(5))
+        return tuple("search HTTP error" for _ in range(6))
 
     # 검색 결과에서 첫 번째 곡 정보 페이지로 이동
     first_tr = soup.find('tr', class_='list')
@@ -47,7 +47,7 @@ def parsing(song_title, artist):
         print("첫 번째 검색 결과:", songid, end=' / ')
     else:
         print("검색 결과가 없습니다.", end=' / ')
-        return tuple("Unknown" for _ in range(5))
+        return tuple("Unknown" for _ in range(6))
 
     song_page_url = f"https://www.genie.co.kr/detail/songInfo?xgnm={songid}"
 
@@ -57,7 +57,7 @@ def parsing(song_title, artist):
 
     if not soup:
         print("곡 정보 페이지 HTTP 응답 오류", end='')
-        return tuple("song info HTTP error" for _ in range(5))
+        return song_id, tuple("song info HTTP error" for _ in range(5))
 
     # 노래 제목 가져오기
     finding_title_element = soup.find('h2', class_='name')
@@ -149,7 +149,7 @@ def parsing(song_title, artist):
 
         if not soup:
             print("가수 정보 페이지 HTTP 응답 오류", end='')
-            return tuple("artist info HTTP error" for _ in range(5))
+            return songid, finding_title, finding_artist, genre, album_image_url, "Unknown"
         
         artist_info_data_class = soup.find('ul', class_='info-data')
         
@@ -173,7 +173,7 @@ def parsing(song_title, artist):
 
 if __name__ == "__main__":
     # CSV 파일에서 노래 제목과 가수 이름을 읽어옵니다.
-    songs = read_csv('song_genre_test.csv')
+    songs = read_csv('song_test.csv')
 
     # 각 곡에 대한 정보를 가져옵니다.
     songs_with_genre = []
@@ -185,4 +185,4 @@ if __name__ == "__main__":
         print()
 
     # 결과를 CSV 파일로 저장합니다.
-    save_to_csv(songs_with_genre, 'song_info.csv')
+    save_to_csv(songs_with_genre, 'song_test_info.csv')
