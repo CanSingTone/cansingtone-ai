@@ -5,6 +5,10 @@ import pitch
 
 app = Flask(__name__)
 
+@app.route('/',methods=['GET'])
+def test():
+    return "hello flask"
+
 # 허용할 파일 확장자
 ALLOWED_EXTENSIONS = {'mp3'}
 
