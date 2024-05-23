@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
-from werkzeug.utils import secure_filename
 import os
-import pitch
+#import pitch
 
 app = Flask(__name__)
 
@@ -24,7 +23,8 @@ def upload_mp3():
     if 'file' not in request.files:
         return jsonify({'message': 'No file part in the request'}), 400
     
-    file = request.files['file']
+    file = request.files['file']  # This is a FileStorage object
+    user_id = request.form['user_id']
 
     # 파일명이 없는 경우
     if file.filename == '':
@@ -33,14 +33,14 @@ def upload_mp3():
     # 허용된 파일인지 확인
     if file and allowed_file(file.filename):
         # 파일 저장
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        #filename = secure_filename(file.filename)
+        #file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         
         # 파일 경로를 pitch_processing 함수에 전달하여 분석
-        result = pitch.pitch_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        #result = pitch.pitch_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         
         # 분석 결과 반환
-        return jsonify({'message': 'File uploaded successfully', 'result': result}), 200
+        return jsonify({'message': 'File uploaded successfully', 'result': file.filename, 'user_id': user_id}), 200
     else:
         return jsonify({'message': 'File extension not allowed'}), 400
 
