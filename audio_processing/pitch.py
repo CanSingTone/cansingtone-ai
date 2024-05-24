@@ -63,7 +63,7 @@ def mp3_to_mid(mp3_file_path):
         drop_area.send_keys(mp3_file_path_absolute)
 
         # 다운로드 버튼 클릭
-        download_button = WebDriverWait(driver, 30).until(
+        download_button = WebDriverWait(driver, 120).until(
             EC.element_to_be_clickable((By.XPATH, "//div[contains(text(), 'Download Midi')]"))
         )
         download_button.click()
@@ -123,5 +123,5 @@ def pitch_processing(file_path):
 
 
 if __name__ == '__main__':
-    file_path = "sample_data/테스트stretched.mp3"
+    file_path = "sample_data/테스트.mp3"
     pitch_processing(file_path)
