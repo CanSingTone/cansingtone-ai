@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import os
 from werkzeug.utils import secure_filename
 
-import pitch
+from audio_processing import pitch
 
 app = Flask(__name__)
 
