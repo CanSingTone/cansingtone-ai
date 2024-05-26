@@ -123,5 +123,5 @@ def pitch_processing(file_path):
 
 
 if __name__ == '__main__':
-    file_path = "sample_data/테스트.mp3"
+    file_path = "sample_data/test.mp3"
     pitch_processing(file_path)

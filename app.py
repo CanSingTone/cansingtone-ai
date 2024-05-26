@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import os
-from werkzeug.utils import secure_filename
 
 import audio_processing.pitch as pitch
 
@@ -35,7 +34,7 @@ def upload_mp3():
     # 허용된 파일인지 확인
     if file and allowed_file(file.filename):
         # 파일 저장
-        filename = secure_filename(file.filename)
+        filename = file.filename
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         
         # 파일 경로를 pitch_processing 함수에 전달하여 분석
