@@ -53,7 +53,7 @@ def mp3_to_mid(mp3_file_path):
         driver.get("https://basicpitch.spotify.com/")
 
         # 파일 드래그 앤 드랍 영역 또는 클릭 영역 찾기
-        drop_area = WebDriverWait(driver, 10).until(
+        drop_area = WebDriverWait(driver, 60).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
         )
 
