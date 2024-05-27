@@ -42,8 +42,11 @@ def upload_mp3():
         highest_note, lowest_note = pitch.pitch_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         url = f'http://13.125.27.204:8080//users//{user_id}//vocal-range'  # 서버주소는 애플리케이션이 실행되는 주소
+        data = {'userId': '4',
+                'vocal_range_high': highest_note,
+                'vocal_range_low': lowest_note}
 
-        response = requests.patch(url, userId=user_id, vocal_range_high=highest_note, vocal_range_low=lowest_note)
+        response = requests.patch(url, data=data)
 
         print(response)
         
