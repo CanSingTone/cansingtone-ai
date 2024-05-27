@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import requests
 import os
 
 import audio_processing.pitch as pitch
@@ -39,6 +40,12 @@ def upload_mp3():
         
         # 파일 경로를 pitch_processing 함수에 전달하여 분석
         highest_note, lowest_note = pitch.pitch_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        url = f'http://13.125.27.204:8080//users//{user_id}//vocal-range'  # 서버주소는 애플리케이션이 실행되는 주소
+
+        response = requests.patch(url, userId=user_id, vocal_range_high=highest_note, vocal_range_low=lowest_note)
+
+        print(response)
         
         # 분석 결과 반환
         return jsonify({'message': 'File uploaded successfully', 'highest_note': highest_note, 'lowest_note': lowest_note, 'user_id': user_id}), 200
