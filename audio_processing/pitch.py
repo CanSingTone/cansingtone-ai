@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 
+import requests
 
 def midi_to_note_name(midi_note):
     note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -78,7 +79,7 @@ def mp3_to_mid(mp3_file_path):
 
 
 def pitch_processing(file_path):
-    if file_path[-3:].lower() == 'mp3':
+    if file_path[-3:].lower() in ['mp3', 'aac']:
         file_path = mp3_to_mid(file_path)
 
     midi = mido.MidiFile(file_path)
@@ -124,4 +125,25 @@ def pitch_processing(file_path):
 
 if __name__ == '__main__':
     file_path = "sample_data/test.mp3"
-    pitch_processing(file_path)
+    highest_note, lowest_note = pitch_processing(file_path)
+
+    test = False
+
+    if test:
+        user_id = '4'
+
+        url = 'http://13.125.27.204:8080/users/{userId}/vocal-range'  # 서버주소는 애플리케이션이 실행되는 주소
+        full_url = url.format(userId=user_id)
+        params = {
+            'vocal_range_high': highest_note,
+            'vocal_range_low': lowest_note
+        }
+
+        response = requests.patch(full_url, params=params)
+
+        # 응답 처리
+        if response.status_code == 200:
+            print("Update Successfully")
+            print("response data:", response.json())
+        else:
+            print("Update Failed:", response.status_code, response.text)

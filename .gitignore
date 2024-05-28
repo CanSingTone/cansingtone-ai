@@ -4,3 +4,6 @@
 *.mid
 *.aac
 request.py
+weights_song_split/
+artists/
+song_data/
