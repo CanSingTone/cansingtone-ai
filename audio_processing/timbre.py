@@ -1,5 +1,4 @@
-import predict_song
-import timbre
+from . import predict_song
 
 import requests
 import librosa
