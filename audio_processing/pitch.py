@@ -109,16 +109,22 @@ def pitch_processing(file_path):
             if msg.type == 'note_on' and msg.velocity > threshold:
                 pitches.append(msg.note)
 
-    # 최고 음과 최저 음 계산
-    max_pitch = max(pitches)
-    min_pitch = min(pitches)
+    if pitches:
+        # 최고 음과 최저 음 계산
+        max_pitch = max(pitches)
+        min_pitch = min(pitches)
 
-    # MIDI 값을 음정 이름으로 변환
-    max_pitch_note = midi_to_note_name(max_pitch)
-    min_pitch_note = midi_to_note_name(min_pitch)
+        # MIDI 값을 음정 이름으로 변환
+        max_pitch_note = midi_to_note_name(max_pitch)
+        min_pitch_note = midi_to_note_name(min_pitch)
 
-    print(f"최고 음 (MIDI): {max_pitch} -> 음정: {max_pitch_note}")
-    print(f"최저 음 (MIDI): {min_pitch} -> 음정: {min_pitch_note}")
+        print(f"최고 음 (MIDI): {max_pitch} -> 음정: {max_pitch_note}")
+        print(f"최저 음 (MIDI): {min_pitch} -> 음정: {min_pitch_note}")
+    else:
+        max_pitch = -1
+        min_pitch = -1
+
+        print("최고음과 최저음을 찾을 수 없습니다.")
 
     return max_pitch, min_pitch
 
@@ -143,7 +149,7 @@ if __name__ == '__main__':
 
         # 응답 처리
         if response.status_code == 200:
-            print("Update Successfully")
-            print("response data:", response.json())
+            print("Pitch Update Successfully: ", response)
         else:
-            print("Update Failed:", response.status_code, response.text)
+            print("Pitch Update Failed:", response)
+

@@ -3,6 +3,8 @@ import requests
 import os
 
 import audio_processing.pitch as pitch
+import audio_processing.timbre as timbre
+import audio_processing.predict_song as predict
 
 app = Flask(__name__)
 
@@ -52,13 +54,15 @@ def upload_pitch():
 
         # 응답 처리
         if response.status_code == 200:
-            print("Update Successfully")
-            print("response data:", response.json())
+            print("Pitch Update Successfully: ", response.json())
+            
+            return jsonify({'message': 'File uploaded successfully', 'highest_note': highest_note, 'lowest_note': lowest_note, 'user_id': user_id}), 200
         else:
-            print("Update Failed:", response.status_code, response.text)
+            print("Pitch Update Failed:", response.status_code)
+
+            return jsonify({'message': 'Pitch upload failed'}), 400
         
-        # 분석 결과 반환
-        return jsonify({'message': 'File uploaded successfully', 'highest_note': highest_note, 'lowest_note': lowest_note, 'user_id': user_id}), 200
+        
     else:
         return jsonify({'message': 'File extension not allowed'}), 400
     
@@ -79,42 +83,73 @@ def upload_timbre():
 
     # 허용된 파일인지 확인
     if file and allowed_file(file.filename):
-
-        return jsonify({'message': 'File URL Upload successfully', 'file_name': file.filename, 'user_id': user_id}), 200
-
         # 파일 저장
         filename = file.filename
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        
-        # 파일 경로를 pitch_processing 함수에 전달하여 분석
-        # = pitch.pitch_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+        mel_path = timbre.timbre_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+        s3_url = 'http://13.125.27.204:8080/upload'
+        files = {'file': open(mel_path, 'rb')}
 
-        url = 'http://13.125.27.204:8080/upload'  # 서버주소는 애플리케이션이 실행되는 주소
-        params = {
-            'file': file,
-        }
-
-        response = requests.patch(url, params=params)
-
-        url = 'http://13.125.27.204:8080/users/{userId}/timbre'  # 서버주소는 애플리케이션이 실행되는 주소
-        full_url = url.format(userId=user_id)
-        params = {
-            'timbre_url': timbre_url,
-        }
-
-        response = requests.patch(full_url, params=params)
+        response = requests.post(s3_url, files=files)
 
         # 응답 처리
         if response.status_code == 200:
-            print("File URL Upload Successfully")
-            print("response data:", response.json())
+            print("File Uploaded")
+            
+            # JSON 응답 데이터 파싱
+            response_data = response.json()
+            
+            # uploadTimbre 값을 timbre_url 변수에 저장
+            timbre_url = response_data.get("uploadTimbre")
+            
+            print("Timbre URL:", timbre_url)
+
+
+
+            timbre_api_url = 'http://13.125.27.204:8080/users/{userId}/timbre'  # 서버주소는 애플리케이션이 실행되는 주소
+            timbre_api_url = timbre_api_url.format(userId=user_id)
+            params = {
+                'timbre_url': timbre_url
+            }
+
+            response = requests.patch(timbre_api_url, params=params)
+
+            # 응답 처리
+            if response.status_code == 200:
+                print("Timbre Update Successfully: ", response.json())
+
+                top10_songs = predict.predict_song(mel_path, activate=False)
+
+                print(top10_songs)
+
+                for song_id in range(1, 11):
+                    recommendations_api_url = 'http://13.125.27.204:8080/recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
+                    recommendation = {
+                        'song_id': song_id,
+                        'user_id': user_id,
+                        'recommendation_method': 2,
+                        'recommendation_date': '2024_05_28'
+                    }
+
+                    response = requests.post(recommendations_api_url, data=recommendation)
+
+                    # 응답 처리
+                    if response.status_code == 200:
+                        print("Recommendation Update Successfully: ", response.json())
+                    else:
+                        print("Recommendation Update Failed: ", response.status_code)
+                        return jsonify({'message': 'Recommendation upload failed'}), 400
+                    
+                return jsonify({'message': 'Timbre upload and recommendation successfully', 'user_id': user_id, 'recommendation': top10_songs}), 200
+
+            else:
+                print("Timbre Update Failed: ", response.status_code)
+                return jsonify({'message': 'Timbre URL upload failed'}), 400
         else:
-            print("File URL Upload Failed:", response.status_code, response.text)
-        
-        # 분석 결과 반환
-        return jsonify({'message': 'File URL Upload successfully', 'timbre_url': timbre_url, 'user_id': user_id}), 200
+            print("Upload Failed:", response.status_code)
+            return jsonify({'message': 'Timbre upload failed'}), 400
     else:
         return jsonify({'message': 'File extension not allowed'}), 400
 
