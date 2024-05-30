@@ -3,22 +3,22 @@ import mysql.connector
 from mysql.connector import errorcode
 
 # CSV 파일 읽기
-file_path = 'song_test.csv'
+file_path = 'song_copy.csv'
 df = pd.read_csv(file_path, encoding='utf-8-sig')
 
 # song_id 열 추가: 1부터 시작하는 순차적인 정수 값
-df['song_id'] = range(4, len(df) + 4)
+df['song_id'] = df['index']
 
 # gender_code -> artist_gender, genre_code -> genre 변환
-df['artist_gender'] = df['gender_code']
+df['artist_gender'] = df['artist_gender_code']
 df['genre'] = df['genre_code']
 
-# karaoke_vid_id -> mr_vid_url, karaoke_vid_id -> song_vid_url
-df['mr_vid_url'] = df['karaoke_vid_id']
-df['song_vid_url'] = df['karaoke_vid_id']
+df['song_title'] = df.apply(lambda row: row['song_title'] + ' ' + row['feat_info'] if pd.notnull(row['feat_info']) else row['song_title'], axis=1)
+
+df['song_vid_url'] = df['mr_vid_url']
 
 # 필요한 열만 선택하여 새로운 DataFrame 생성
-db_df = df[['artist_gender', 'genre', 'highest_note', 'lowest_note', 'song_id', 'artist', 'mr_vid_url', 'song_title', 'song_vid_url', 'album_image_url']].copy()
+db_df = df[['artist_gender', 'genre', 'highest_note', 'lowest_note', 'song_id', 'artist', 'mr_vid_url', 'song_title', 'song_vid_url', 'album_image', 'karaoke_num']].copy()
 
 # 열 이름을 데이터베이스 필드 이름에 맞게 변경
 db_df.rename(columns={
@@ -31,7 +31,8 @@ db_df.rename(columns={
     'mr_vid_url': 'mr_vid_url',
     'song_title': 'song_title',
     'song_vid_url': 'song_vid_url',
-    'album_image_url': 'album_image'
+    'album_image': 'album_image',
+    'karaoke_num': 'karaoke_num'
 }, inplace=True)
 
 # MySQL 데이터베이스 연결 설정
@@ -54,13 +55,13 @@ try:
     # DataFrame 데이터를 MySQL 테이블에 삽입
     for index, row in db_df.iterrows():
         insert_query = """
-        INSERT INTO song (artist_gender, genre, highest_note, lowest_note, song_id, artist, mr_vid_url, song_title, song_vid_url, album_image)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO song (artist_gender, genre, highest_note, lowest_note, song_id, artist, mr_vid_url, song_title, song_vid_url, album_image, karaoke_num)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(insert_query, (
             row['artist_gender'], row['genre'], row['highest_note'], row['lowest_note'],
             row['song_id'], row['artist'], row['mr_vid_url'], row['song_title'],
-            row['song_vid_url'], row['album_image']
+            row['song_vid_url'], row['album_image'], row['karaoke_num']
         ))
 
     # 커밋
