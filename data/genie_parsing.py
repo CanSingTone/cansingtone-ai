@@ -10,24 +10,24 @@ def read_csv(filename):
     with open(filename, 'r', encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            songs.append((row['song_title'], row['artist']))
+            songs.append((row['song_title'], row['artist'], row['genie_id']))
     return songs
 
 
 # CSV 파일에 장르 정보를 저장하는 함수
 def save_to_csv(songs_with_genre, output_filename):
     with open(output_filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
-        fieldnames = ['song_id', 'song_title', 'artist', 'genre', 'album_image_url', 'gender']
+        fieldnames = ['genie_id', 'song_title', 'artist', 'genre', 'album_image', 'artist_gender']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for song in songs_with_genre:
-            writer.writerow({'song_id': song[0], 'song_title': song[1], 'artist': song[2], 'genre': song[3], 'album_image_url': song[4], 'gender': song[5]})
+            writer.writerow({'genie_id': song[0], 'song_title': song[1], 'artist': song[2], 'genre': song[3], 'album_image': song[4], 'artist_gender': song[5]})
 
 
 # Genie 사이트에서 곡 정보를 가져오는 함수
 def parsing(song_title, artist):
     # 검색어 생성
-    search_query = f"{song_title} {artist}"
+    search_query = f"{artist} {song_title}"
     search_url = f"https://www.genie.co.kr/search/searchSong?query={search_query}"
 
     # 검색 결과 페이지 요청
@@ -41,15 +41,15 @@ def parsing(song_title, artist):
 
     # 검색 결과에서 첫 번째 곡 정보 페이지로 이동
     first_tr = soup.find('tr', class_='list')
-    songid = None
+    genie_id = None
     if first_tr:
-        songid = first_tr.get('songid')
-        print("첫 번째 검색 결과:", songid, end=' / ')
+        genie_id = first_tr.get('songid')
+        print("첫 번째 검색 결과:", genie_id, end=' / ')
     else:
         print("검색 결과가 없습니다.", end=' / ')
         return tuple("Unknown" for _ in range(6))
 
-    song_page_url = f"https://www.genie.co.kr/detail/songInfo?xgnm={songid}"
+    song_page_url = f"https://www.genie.co.kr/detail/songInfo?xgnm={genie_id}"
 
     # 곡 정보 페이지 요청
     response = requests.get(song_page_url, headers=headers)
@@ -57,7 +57,7 @@ def parsing(song_title, artist):
 
     if not soup:
         print("곡 정보 페이지 HTTP 응답 오류", end='')
-        return song_id, tuple("song info HTTP error" for _ in range(5))
+        return genie_id, tuple("song info HTTP error" for _ in range(5))
 
     # 노래 제목 가져오기
     finding_title_element = soup.find('h2', class_='name')
@@ -105,11 +105,11 @@ def parsing(song_title, artist):
     # 앨범 이미지 url 가져오기
     album_image_element = soup.find('a', class_='album2-thumb')
 
-    album_image_url = None
+    album_image = None
     if album_image_element:
-        album_image_url = album_image_element.get('href')
-        album_image_url = album_image_url[2:] # 시작 부분 // 제거
-        print(album_image_url, end=' / ')
+        album_image = album_image_element.get('href')
+        album_image = album_image[2:] # 시작 부분 // 제거
+        print(album_image, end=' / ')
     else:
         print("앨범이미지X", end=' / ')
 
@@ -139,7 +139,7 @@ def parsing(song_title, artist):
                 print(artist_id, end=' / ')
 
     # 가수 id가 있다면, 가수 성별 가져오기
-    gender = None
+    artist_gender = None
     if artist_id:
         artist_page_url = f"https://www.genie.co.kr/detail/artistInfo?xxnm={artist_id}"
 
@@ -149,7 +149,7 @@ def parsing(song_title, artist):
 
         if not soup:
             print("가수 정보 페이지 HTTP 응답 오류", end='')
-            return songid, finding_title, finding_artist, genre, album_image_url, "Unknown"
+            return genie_id, finding_title, finding_artist, genre, album_image, "Unknown"
         
         artist_info_data_class = soup.find('ul', class_='info-data')
         
@@ -160,29 +160,29 @@ def parsing(song_title, artist):
                 gender_span = li_tag.find('span', class_='value')
 
                 if gender_span:
-                    gender = gender_span.get_text(strip=True)
-                    print(gender, end=' / ')
+                    artist_gender = gender_span.get_text(strip=True)
+                    print(artist_gender, end=' / ')
                 else:
                     print("성별X", end=' / ')
     else:
         print("artist_idX", end=' / ')
         
 
-    return songid, finding_title, finding_artist, genre, album_image_url, gender
+    return genie_id, finding_title, finding_artist, genre, album_image, artist_gender
 
 
 if __name__ == "__main__":
     # CSV 파일에서 노래 제목과 가수 이름을 읽어옵니다.
-    songs = read_csv('song_test.csv')
+    songs = read_csv('song_copy.csv')
 
     # 각 곡에 대한 정보를 가져옵니다.
     songs_with_genre = []
-    for song_title, artist in songs:
+    for song_title, artist, genie_id in songs:
         print("찾을 대상: ", song_title, artist, end=' - ')
-        song_id, finding_title, finding_artist, genre, album_image_url, gender = parsing(song_title, artist)
-        songs_with_genre.append((song_id, finding_title, finding_artist, genre, album_image_url, gender))
+        genie_id, finding_title, finding_artist, genre, album_image, artist_gender = parsing(song_title, artist)
+        songs_with_genre.append((genie_id, finding_title, finding_artist, genre, album_image, artist_gender))
 
         print()
 
     # 결과를 CSV 파일로 저장합니다.
-    save_to_csv(songs_with_genre, 'song_test_info.csv')
+    save_to_csv(songs_with_genre, 'song_unknown_info.csv')
