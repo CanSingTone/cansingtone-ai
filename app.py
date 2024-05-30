@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 import os
+import datetime
 
 import audio_processing.pitch as pitch
 import audio_processing.timbre as timbre
@@ -124,13 +125,15 @@ def upload_timbre():
 
                 print(top10_songs)
 
+                current_time_local = datetime.now().isoformat()
+
                 for song_id in range(1, 11):
                     recommendations_api_url = 'http://13.125.27.204:8080/recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
                     recommendation = {
                         'song_id': song_id,
                         'user_id': user_id,
                         'recommendation_method': 2,
-                        'recommendation_date': '2024_05_28'
+                        'recommendation_date': current_time_local
                     }
 
                     response = requests.post(recommendations_api_url, data=recommendation)
