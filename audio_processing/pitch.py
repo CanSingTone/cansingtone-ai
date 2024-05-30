@@ -1,6 +1,7 @@
 import os
 import shutil
 import mido
+import pandas as pd
 
 import time
 from selenium import webdriver
@@ -33,7 +34,7 @@ def mp3_to_mid(mp3_file_path):
 
     # 브라우저 설정
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # 헤드리스 모드
+    #options.add_argument("--headless")  # 헤드리스 모드
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_experimental_option("prefs", {
@@ -64,7 +65,7 @@ def mp3_to_mid(mp3_file_path):
         drop_area.send_keys(mp3_file_path_absolute)
 
         # 다운로드 버튼 클릭
-        download_button = WebDriverWait(driver, 120).until(
+        download_button = WebDriverWait(driver, 240).until(
             EC.element_to_be_clickable((By.XPATH, "//div[contains(text(), 'Download Midi')]"))
         )
         download_button.click()
@@ -102,7 +103,7 @@ def pitch_processing(file_path):
     # 모든 노트 이벤트에서 피치 정보 추출
     pitches = []
     threshold = 80
-    print(f"threshold: {threshold}")
+    #print(f"threshold: {threshold}")
 
     for i, track in enumerate(midi.tracks):
         for msg in track:
@@ -129,13 +130,56 @@ def pitch_processing(file_path):
     return max_pitch, min_pitch
 
 
+def read_csv_data(csv_file):
+    df = pd.read_csv(csv_file, encoding='utf-8-sig')
+    return df
+    
+
+def update_csv_with_pitch_data(csv_file, downloads_folder, batch_size=10):    
+    df = read_csv_data(csv_file)
+    
+    # Adding columns for highest_note and lowest_note if not present
+    if 'highest_note' not in df.columns:
+        df['highest_note'] = None
+    if 'lowest_note' not in df.columns:
+        df['lowest_note'] = None
+
+    for file_name in os.listdir(downloads_folder):
+        if file_name.endswith('.mp3'):
+            artist_song = file_name.replace('.mp3', '')
+            artist, song_title = artist_song.split(' - ', 1)
+
+            print(f"테스트 곡: {artist} - {song_title}.mp3")
+            
+            file_path = os.path.join(downloads_folder, file_name)
+            highest_note, lowest_note = pitch_processing(file_path)
+            
+            # Update the CSV dataframe
+            mask = (df['genie_artist'] == artist) & (df['genie_song_title'] == song_title)
+            df.loc[mask, 'highest_note'] = highest_note
+            df.loc[mask, 'lowest_note'] = lowest_note
+
+            processed_count += 1
+
+            # Save progress after processing each batch
+            if processed_count % batch_size == 0:
+                df.to_csv(csv_file, index=False, encoding='utf-8-sig')
+                print(f"Processed {processed_count} files and saved progress to CSV.")
+    
+    # Save the updated dataframe back to CSV
+    df.to_csv(csv_file, index=False, encoding='utf-8-sig')
+    print(f"Updated CSV file: {csv_file}")
+
+
 if __name__ == '__main__':
-    file_path = "sample_data/test.mp3"
-    highest_note, lowest_note = pitch_processing(file_path)
+    
+    api_test = False
+    csv_test = True
 
-    test = False
+    if api_test:
+        file_path = "sample_data/test.mp3"
+        highest_note, lowest_note = pitch_processing(file_path)
 
-    if test:
         user_id = '4'
 
         url = 'http://13.125.27.204:8080/users/{userId}/vocal-range'  # 서버주소는 애플리케이션이 실행되는 주소
@@ -152,4 +196,13 @@ if __name__ == '__main__':
             print("Pitch Update Successfully: ", response)
         else:
             print("Pitch Update Failed:", response)
+
+    if csv_test:
+        # 파일 경로와 폴더 경로 설정
+        csv_file = 'song_copy.csv'
+        downloads_folder = 'downloads'
+
+        # 업데이트 작업 수행
+        update_csv_with_pitch_data(csv_file, downloads_folder)
+
 
