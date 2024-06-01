@@ -15,8 +15,6 @@ df['genre'] = df['genre_code']
 
 df['song_title'] = df.apply(lambda row: row['song_title'] + ' ' + row['feat_info'] if pd.notnull(row['feat_info']) else row['song_title'], axis=1)
 
-df['song_vid_url'] = df['mr_vid_url']
-
 # 필요한 열만 선택하여 새로운 DataFrame 생성
 db_df = df[['artist_gender', 'genre', 'highest_note', 'lowest_note', 'song_id', 'artist', 'mr_vid_url', 'song_title', 'song_vid_url', 'album_image', 'karaoke_num']].copy()
 
