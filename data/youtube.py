@@ -6,15 +6,8 @@ from datetime import datetime, timedelta
 
 # YouTube API 키 설정
 api_key = [
-    "AIzaSyBmfww6LKYPWg0I_SAgIaLkjZ77hybOcwk",
-    "AIzaSyBiT3GZlzzCtDZMJBpHY7XFZT1PCCF9PA8",
-    "AIzaSyDGBaopMLd04Vk_-icrNYIT2TsgIF357wI",
-    "AIzaSyAYkycGQzKWtjp1rLCYGOiCLwZoWSA_Gbo",
-    "AIzaSyA__FK1TUu3iCR64k86zXnneGhwaEqcDK0",
-    "AIzaSyAIyAwINasnAkgTxsWLszQsJ0_QSVUzlCo",
-    "AIzaSyAlMWtSOagZ4j-rNl9nCuJCe3N1T2c09uI",
-    "AIzaSyA7g5f2Qp8FJ1ePsWQUOIuF2byntEHti_Y",
-    "AIzaSyD2CvDj4Q0S5knGzyA505tsLVodwTIWUOE"
+    "",
+    ""
 ]
 
 
@@ -167,9 +160,10 @@ if __name__ == "__main__":
     input_file_name = 'song_copy.csv'
     output_file_name = 'song_copy_url.csv'
 
-    searchTJ = False
+    search_tj = False
+    search_youtube = True
 
-    if searchTJ:
+    if search_tj:
         # 시작 날짜 설정 (2014년 6월 1일)
         start_date = datetime(2016, 1, 1)
 
@@ -187,22 +181,25 @@ if __name__ == "__main__":
         videos_info = parse_song_info(videos)
 
         save_csv(videos_info, fieldnames, output_file_name)
-    else:
+
+    if search_youtube:
         songs = load_csv(input_file_name)
 
         fieldnames = ['song_title', 'artist', 'video_title', 'song_vid_url']
         values = []
 
         idx = 0
-        start = 900
+        start = 3700
+        end = len(songs)
 
-        for i in range(start, len(songs)):
+        for i in range(start, end):
             song_title, artist = songs[i]
             video_title, song_url = search_song(song_title, artist, api_key[idx])
             print(i, [song_title, artist, video_title, song_url])
             values.append([song_title, artist, video_title, song_url])
             
             if (i+1) % 100 == 0:
-                save_csv(values, fieldnames, str(idx) + output_file_name)
-                values = []
                 idx += 1
+
+        save_csv(values, fieldnames, output_file_name)
+
