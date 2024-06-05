@@ -91,9 +91,8 @@ def upload_timbre():
         return jsonify({'isSuccess': False, 'message': 'No file part in the request'}), 400
     
     file = request.files['file']  # This is a FileStorage object
-    data = request.get_json()
-    user_id = data['user_id']
-    timbre_name = data['timbre_name']
+    user_id = request.form['user_id']
+    timbre_name = request.form.get('timbre_name', 'timbre')
 
     # 파일명이 없는 경우
     if file.filename == '':
