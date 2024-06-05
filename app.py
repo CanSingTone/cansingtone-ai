@@ -91,7 +91,9 @@ def upload_timbre():
         return jsonify({'isSuccess': False, 'message': 'No file part in the request'}), 400
     
     file = request.files['file']  # This is a FileStorage object
-    user_id = request.form['user_id']
+    data = request.get_json()
+    user_id = data['user_id']
+    timbre_name = data['timbre_name']
 
     # 파일명이 없는 경우
     if file.filename == '':
@@ -126,6 +128,7 @@ def upload_timbre():
     # s3 url과 유저id를 보내 db에 넣고 그 응답으로 오는 음색id 확인
     timbre_api_url = 'http://13.125.27.204:8080/timbre'  # 서버주소는 애플리케이션이 실행되는 주소
     timbre_info = {
+        'timbre_name': timbre_name,
         'timbre_url': timbre_url,
         'user_id': user_id
     }
