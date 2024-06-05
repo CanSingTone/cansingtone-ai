@@ -46,6 +46,10 @@ def upload_pitch():
     # 파일 경로를 pitch_processing 함수에 전달하여 분석
     highest_note, lowest_note = pitch.pitch_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+    if highest_note == -1 or lowest_note == -1:
+        print("Pitch processing failed:", response.status_code)
+        return jsonify({'isSuccess': False, 'message': 'Pitch processing failed'}), 400
+
     pitch_url = f'http://13.125.27.204:8080/users/{user_id}/vocal-range'  # 서버주소는 애플리케이션이 실행되는 주소
     params = {
         'vocal_range_high': highest_note,
@@ -168,9 +172,8 @@ def upload_timbre():
 @app.route('/recommendation-timbre', methods=['POST'])
 def recommendation_timbre():
 
-    data = request.get_json()
-    timbre_id = data['timbre_id']
-    user_id = data['user_id']
+    timbre_id = request.form['timbre_id']
+    user_id = request.form['user_id']
     
     # timbre_id로 음색 파일 URL을 얻기 위해 외부 API 호출
     response = requests.get(f'http://13.125.27.204:8080/timbre/{timbre_id}')
@@ -213,8 +216,7 @@ def recommendation_timbre():
 @app.route('/recommendation-combined', methods=['POST'])
 def recommendation_combined():
 
-    data = request.get_json()
-    user_id = data['user_id']
+    user_id = request.form['user_id']
 
     response = requests.get(f'http://13.125.27.204:8080/users/{user_id}')
     if response.status_code != 200:
