@@ -184,7 +184,15 @@ def recommendation_timbre():
     response_json = response.json()
     timbre_url = response_json.get('result', {}).get('timbreUrl')
 
-    top10_songs = predict.predict_song(timbre_url, activate=False)
+    timbre_file_path = 'sample_data/timbre.mp3'
+    response = requests.get(timbre_url)
+    if response.status_code == 200:
+        with open(timbre_file_path, 'wb') as file:
+            file.write(response.content)
+    else:
+        print(f"Timbre file download failed: {response.status_code}")
+
+    top10_songs = predict.predict_song(timbre_file_path, activate=False)
 
     current_time_local = datetime.now().isoformat()
     song_ids = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
