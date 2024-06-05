@@ -172,8 +172,9 @@ def upload_timbre():
 @app.route('/recommendation-timbre', methods=['POST'])
 def recommendation_timbre():
 
-    timbre_id = request.form['timbre_id']
-    user_id = request.form['user_id']
+    data = request.get_json()
+    timbre_id = data['timbre_id']
+    user_id = data['user_id']
     
     # timbre_id로 음색 파일 URL을 얻기 위해 외부 API 호출
     response = requests.get(f'http://13.125.27.204:8080/timbre/{timbre_id}')
@@ -224,7 +225,8 @@ def recommendation_timbre():
 @app.route('/recommendation-combined', methods=['POST'])
 def recommendation_combined():
 
-    user_id = request.form['user_id']
+    data = request.get_json()
+    user_id = data['user_id']
 
     response = requests.get(f'http://13.125.27.204:8080/users/{user_id}')
     if response.status_code != 200:
