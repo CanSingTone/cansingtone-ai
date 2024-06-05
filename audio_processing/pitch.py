@@ -22,7 +22,7 @@ def midi_to_note_name(midi_note):
 
 def mp3_to_mid(mp3_file_path):
     # MP3 파일 경로와 다운로드 받을 위치
-    download_dir = "./sample_midi1"
+    download_dir = "./sample_midi"
 
     # sample_midi 디렉토리가 존재하는지 확인한 후, 존재하면 삭제
     if os.path.exists(download_dir):
@@ -34,7 +34,7 @@ def mp3_to_mid(mp3_file_path):
 
     # 브라우저 설정
     options = webdriver.ChromeOptions()
-    #options.add_argument("--headless")  # 헤드리스 모드
+    options.add_argument("--headless")  # 헤드리스 모드
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_experimental_option("prefs", {
@@ -67,7 +67,7 @@ def mp3_to_mid(mp3_file_path):
         drop_area.send_keys(mp3_file_path_absolute)
 
         # 다운로드 버튼 클릭
-        download_button = WebDriverWait(driver, 180).until(
+        download_button = WebDriverWait(driver, 240).until(
             EC.element_to_be_clickable((By.XPATH, "//div[contains(text(), 'Download Midi')]"))
         )
         download_button.click()
@@ -216,8 +216,8 @@ if __name__ == '__main__':
 
     if csv_test:
         # 파일 경로와 폴더 경로 설정
-        csv_file = 'song_copy1.csv'
-        downloads_folder = 'sample_vad1'
+        csv_file = 'song_copy.csv'
+        downloads_folder = 'sample_vad'
 
         # 업데이트 작업 수행
         update_csv_with_pitch_data(csv_file, downloads_folder)
