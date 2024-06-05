@@ -25,27 +25,25 @@ def create_dataset(artist_folder='artists', save_folder='song_data',
     for artist in artists:
         print(artist)
         artist_path = os.path.join(artist_folder, artist)
-        artist_albums = [path for path in os.listdir(artist_path) if os.path.isdir(os.path.join(artist_path, path))]
+        artist_songs = [song for song in os.listdir(artist_path) if not song.startswith('.')]
 
-        for album in artist_albums:
-            album_path = os.path.join(artist_path, album)
-            album_songs = [song for song in os.listdir(album_path) if not song.startswith('.')]
+        for song in artist_songs:
+            song_path = os.path.join(artist_path, song)
 
-            for song in album_songs:
-                song_path = os.path.join(album_path, song)
+            _, song, song_id = song[:-4].split("__")
 
-                # Create mel spectrogram and convert it to the log scale
-                y, sr = librosa.load(song_path, sr=sr)
-                S = librosa.feature.melspectrogram(y, sr=sr, n_mels=n_mels,
-                                                   n_fft=n_fft,
-                                                   hop_length=hop_length)
-                log_S = librosa.power_to_db(S, ref=np.max)
-                data = (artist, log_S, song)
+            # Create mel spectrogram and convert it to the log scale
+            y, sr = librosa.load(song_path, sr=sr)
+            S = librosa.feature.melspectrogram(y, sr=sr, n_mels=n_mels,
+                                                n_fft=n_fft,
+                                                hop_length=hop_length)
+            log_S = librosa.power_to_db(S, ref=np.max)
+            data = (artist, log_S, song, song_id)
 
-                # Save each song
-                save_name = artist + '_%%-%%_' + album + '_%%-%%_' + song
-                with open(os.path.join(save_folder, save_name), 'wb') as fp:
-                    dill.dump(data, fp)
+            # Save each song
+            save_name = artist + '_%%-%%_' + song + '_%%-%%_' + song_id
+            with open(os.path.join(save_folder, save_name), 'wb') as fp:
+                dill.dump(data, fp)
 
 
 def load_dataset(song_folder_name='song_data',
@@ -131,8 +129,6 @@ if __name__ == '__main__':
 
     # configuration options
     create_data = True
-    create_visuals = False
-    save_visuals = False
 
     if create_data:
         create_dataset(artist_folder='artists', save_folder='song_data',
