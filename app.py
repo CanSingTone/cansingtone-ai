@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 import os
-import datetime
+from datetime import datetime
 
 import audio_processing.pitch as pitch
 import audio_processing.timbre as timbre
@@ -137,8 +137,6 @@ def upload_timbre():
     timbre_id = response_json.get('result', {}).get('timbreId')
 
     top10_songs = predict.predict_song(mel_path, activate=False)
-
-    print(top10_songs)
 
     current_time_local = datetime.now().isoformat()
     song_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
