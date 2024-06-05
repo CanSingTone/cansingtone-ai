@@ -4,7 +4,7 @@ import dill
 import os
 
 
-def audio_to_mel(artist, song, song_id, file_path, save_folder='sample_mel', sr=16000, n_mels=128,
+def audio_to_mel(artist, song, file_path, save_folder='sample_mel', sr=16000, n_mels=128,
                    n_fft=2048, hop_length=512):
     
     # Create mel spectrogram and convert it to the log scale
@@ -16,7 +16,7 @@ def audio_to_mel(artist, song, song_id, file_path, save_folder='sample_mel', sr=
     data = (artist, log_S, song)
 
     # Save each song
-    save_name = artist + "_" + song + "_" + song_id + ".mp3"
+    save_name = artist + "_" + song + ".mp3"
     mel_path = os.path.join(save_folder, save_name)
     with open(mel_path, 'wb') as fp:
         dill.dump(data, fp)
@@ -29,8 +29,6 @@ def timbre_processing(file_path):
     # 최종적으로 mel spectrogram 파일이 될 것이다 이거를 db에 저장할 거임
     # 이거 가지고 추천 작업 시작
     # 슬라이스 뭐 이미 있는 곡들의 값들과 비교 네트워크 통과 등등 유사도 통해서 상위 10곡 반환
-
-    # 가창 부분 추출하는 코드 추가 필요
 
 
     # Mel-Spectrogram으로 변환
