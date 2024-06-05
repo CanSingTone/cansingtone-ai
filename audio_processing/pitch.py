@@ -22,7 +22,7 @@ def midi_to_note_name(midi_note):
 
 def mp3_to_mid(mp3_file_path):
     # MP3 파일 경로와 다운로드 받을 위치
-    download_dir = "./sample_midi"
+    download_dir = "./sample_midi1"
 
     # sample_midi 디렉토리가 존재하는지 확인한 후, 존재하면 삭제
     if os.path.exists(download_dir):
@@ -50,12 +50,14 @@ def mp3_to_mid(mp3_file_path):
     # 웹드라이버 초기화
     driver = webdriver.Chrome(service=service, options=options)
 
+    midi_file = 'basic_pitch_transcription.mid'
+
     try:
         # 웹사이트 열기
         driver.get("https://basicpitch.spotify.com/")
 
         # 파일 드래그 앤 드랍 영역 또는 클릭 영역 찾기
-        drop_area = WebDriverWait(driver, 60).until(
+        drop_area = WebDriverWait(driver, 90).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='file']"))
         )
 
@@ -65,23 +67,37 @@ def mp3_to_mid(mp3_file_path):
         drop_area.send_keys(mp3_file_path_absolute)
 
         # 다운로드 버튼 클릭
-        download_button = WebDriverWait(driver, 240).until(
+        download_button = WebDriverWait(driver, 180).until(
             EC.element_to_be_clickable((By.XPATH, "//div[contains(text(), 'Download Midi')]"))
         )
         download_button.click()
 
         # 다운로드 완료 대기 (적절한 시간으로 설정)
         time.sleep(5)
+    except:
+        midi_file = 'dummy'
     finally:
         # 브라우저 종료
         driver.quit()
 
-    return os.path.join(download_dir, "basic_pitch_transcription.mid")
+    midi_path = os.path.join(download_dir, midi_file)
+
+    if os.path.exists(midi_path):
+        return midi_path
+    else:
+        return None
 
 
 def pitch_processing(file_path):
     if file_path[-3:].lower() in ['mp3', 'aac']:
         file_path = mp3_to_mid(file_path)
+    else:
+        print("잘못된 파일 형식")
+        return -1, -1
+    
+    if file_path == None:
+        print("접속 실패")
+        return -1, -1
 
     midi = mido.MidiFile(file_path)
 
@@ -139,15 +155,16 @@ def update_csv_with_pitch_data(csv_file, downloads_folder, batch_size=10):
     df = read_csv_data(csv_file)
     
     # Adding columns for highest_note and lowest_note if not present
-    if 'highest_note' not in df.columns:
-        df['highest_note'] = None
-    if 'lowest_note' not in df.columns:
-        df['lowest_note'] = None
+    if 'highest_note80' not in df.columns:
+        df['highest_note80'] = None
+    if 'lowest_note80' not in df.columns:
+        df['lowest_note80'] = None
+
+    processed_count = 0
 
     for file_name in os.listdir(downloads_folder):
         if file_name.endswith('.mp3'):
-            artist_song = file_name.replace('.mp3', '')
-            artist, song_title = artist_song.split(' - ', 1)
+            artist, song_title, song_id = file_name[:-4].split("__")
 
             print(f"테스트 곡: {artist} - {song_title}.mp3")
             
@@ -155,9 +172,9 @@ def update_csv_with_pitch_data(csv_file, downloads_folder, batch_size=10):
             highest_note, lowest_note = pitch_processing(file_path)
             
             # Update the CSV dataframe
-            mask = (df['genie_artist'] == artist) & (df['genie_song_title'] == song_title)
-            df.loc[mask, 'highest_note'] = highest_note
-            df.loc[mask, 'lowest_note'] = lowest_note
+            mask = df['index'] == int(song_id)
+            df.loc[mask, 'highest_note80'] = highest_note
+            df.loc[mask, 'lowest_note80'] = lowest_note
 
             processed_count += 1
 
@@ -167,8 +184,8 @@ def update_csv_with_pitch_data(csv_file, downloads_folder, batch_size=10):
                 print(f"Processed {processed_count} files and saved progress to CSV.")
     
     # Save the updated dataframe back to CSV
-    df.to_csv(csv_file, index=False, encoding='utf-8-sig')
-    print(f"Updated CSV file: {csv_file}")
+    #df.to_csv(csv_file, index=False, encoding='utf-8-sig')
+    #print(f"Updated CSV file: {csv_file}")
 
 
 if __name__ == '__main__':
@@ -199,8 +216,8 @@ if __name__ == '__main__':
 
     if csv_test:
         # 파일 경로와 폴더 경로 설정
-        csv_file = 'song_copy.csv'
-        downloads_folder = 'downloads'
+        csv_file = 'song_copy1.csv'
+        downloads_folder = 'sample_vad1'
 
         # 업데이트 작업 수행
         update_csv_with_pitch_data(csv_file, downloads_folder)
