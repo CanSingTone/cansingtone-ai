@@ -41,7 +41,7 @@ def create_dataset(artist_folder='artists', save_folder='song_data',
             data = (artist, log_S, song, song_id)
 
             # Save each song
-            save_name = artist + '_%%-%%_' + song + '_%%-%%_' + song_id
+            save_name = artist + '_%%-%%_' + song + '_%%-%%_' + song_id + '.mp3'
             with open(os.path.join(save_folder, save_name), 'wb') as fp:
                 dill.dump(data, fp)
 
