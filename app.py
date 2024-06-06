@@ -92,7 +92,6 @@ def upload_timbre():
     
     file = request.files['file']  # This is a FileStorage object
     user_id = request.form['user_id']
-    timbre_name = request.form.get('timbre_name', 'timbre')
 
     # 파일명이 없는 경우
     if file.filename == '':
@@ -127,7 +126,6 @@ def upload_timbre():
     # s3 url과 유저id를 보내 db에 넣고 그 응답으로 오는 음색id 확인
     timbre_api_url = 'http://13.125.27.204:8080/timbre'  # 서버주소는 애플리케이션이 실행되는 주소
     timbre_info = {
-        'timbre_name': timbre_name,
         'timbre_url': timbre_url,
         'user_id': user_id
     }
@@ -231,11 +229,20 @@ def recommendation_combined():
     user_id = data['user_id']
 
     response = requests.get(f'http://13.125.27.204:8080/users/{user_id}')
-    if response.status_code != 200:
+    response_json = response.json()
+    code = response_json.get('code')
+    print("Response code: ", code, type(code))
+
+    if code != 1000:
         print("Failed to retrieve user info", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve user info'}), 400
+
+
+    #if code != 1000:
+    #    print("Failed to retrieve user info", response.status_code)
+    #    return jsonify({'isSuccess': False, 'message': 'Failed to retrieve user info'}), 400
     
-    response_json = response.json()
+    
     result_json = response_json.get('result', {})
     gender = result_json.get('gender')
     highest_note = result_json.get('vocal_range_high')
