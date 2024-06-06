@@ -236,12 +236,6 @@ def recommendation_combined():
     if code != 1000:
         print("Failed to retrieve user info", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve user info'}), 400
-
-
-    #if code != 1000:
-    #    print("Failed to retrieve user info", response.status_code)
-    #    return jsonify({'isSuccess': False, 'message': 'Failed to retrieve user info'}), 400
-    
     
     result_json = response_json.get('result', {})
     gender = result_json.get('gender')
@@ -259,7 +253,13 @@ def recommendation_combined():
     response_json = response.json()
     like_songs = [item.get('songInfo') for item in response_json.get('result', [])]
 
-    response = requests.get(f'http://13.125.27.204:8080/timbre')
+    # 요청에 필요한 파라미터
+    timbre_info_api = 'http://13.125.27.204:8080/timbre'
+    params = {
+        'user_id': user_id
+    }
+
+    response = requests.get(timbre_info_api, params=params)
     if response.status_code != 200:
         print("Failed to retrieve user's timbre info", response.status_code)
         return jsonify({'isSuccess': False, 'message': "Failed to retrieve user's timbre info"}), 400
