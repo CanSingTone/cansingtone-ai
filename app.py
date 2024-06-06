@@ -143,7 +143,7 @@ def upload_timbre():
     top10_songs = predict.predict_song(mel_path, activate=False)
 
     current_time_local = datetime.now().isoformat()
-    song_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    song_ids = [song[0][2] for song in top10_songs]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
     timbre_recommendations_url = 'http://13.125.27.204:8080/timbre-based-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
