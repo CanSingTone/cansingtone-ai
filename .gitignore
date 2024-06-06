@@ -7,3 +7,5 @@ request.py
 weights_song_split/
 artists/
 song_data/
+song_data_male/
+song_data_female/
