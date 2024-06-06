@@ -67,6 +67,7 @@ def load_dataset(song_folder_name='song_data',
     artist = []
     spectrogram = []
     song_name = []
+    song_id = []
 
     # Load each song into memory if the artist is included and return
     for song in song_list:
@@ -76,8 +77,9 @@ def load_dataset(song_folder_name='song_data',
             artist.append(loaded_song[0])
             spectrogram.append(loaded_song[1])
             song_name.append(loaded_song[2])
+            song_id.append(loaded_song[3])
 
-    return artist, spectrogram, song_name
+    return artist, spectrogram, song_name, song_id
 
 
 def load_dataset_song_split(song_folder_name='song_data',
@@ -106,13 +108,14 @@ def load_dataset_song_split(song_folder_name='song_data',
            Y_val, X_val, S_val
 
 
-def slice_songs(X, Y, S, length=911):
+def slice_songs(X, Y, S, I, length=911):
     """Slices the spectrogram into sub-spectrograms according to length"""
 
     # Create empty lists for train and test sets
     artist = []
     spectrogram = []
     song_name = []
+    song_id = []
 
     # Slice up songs using the length specified
     for i, song in enumerate(X):
@@ -121,8 +124,9 @@ def slice_songs(X, Y, S, length=911):
             spectrogram.append(song[:, length * j:length * (j + 1)])
             artist.append(Y[i])
             song_name.append(S[i])
+            song_id.append(I[i])
 
-    return np.array(spectrogram), np.array(artist), np.array(song_name)
+    return np.array(spectrogram), np.array(artist), np.array(song_name), np.array(song_id)
 
 
 if __name__ == '__main__':
