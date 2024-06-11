@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import audio_processing.pitch as pitch
 import audio_processing.timbre as timbre
@@ -47,7 +47,7 @@ def upload_pitch():
     highest_note, lowest_note = pitch.pitch_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
     if highest_note == -1 or lowest_note == -1:
-        print("Pitch processing failed:", response.status_code)
+        print("Pitch processing failed")
         return jsonify({'isSuccess': False, 'message': 'Pitch processing failed'}), 400
 
     pitch_url = f'http://13.125.27.204:8080/users/{user_id}/vocal-range'  # 서버주소는 애플리케이션이 실행되는 주소
@@ -92,6 +92,16 @@ def upload_timbre():
     
     file = request.files['file']  # This is a FileStorage object
     user_id = request.form['user_id']
+
+    response = requests.get(f'http://13.125.27.204:8080/users/{user_id}')
+    response_json = response.json()
+
+    if response.status_code != 200:
+        print("Failed to retrieve user info", response.status_code)
+        return jsonify({'isSuccess': False, 'message': 'Failed to retrieve user info'}), 400
+
+    result_json = response_json.get('result', {})
+    gender = result_json.get('gender')
 
     # 파일명이 없는 경우
     if file.filename == '':
@@ -140,9 +150,19 @@ def upload_timbre():
     response_json = response.json()
     timbre_id = response_json.get('result', {}).get('timbreId')
 
-    top10_songs = predict.predict_song(mel_path, activate=False)
+    if gender == 1:
+        nb_classes = 232
+    elif gender == 2:
+        nb_classes = 116
 
-    current_time_local = datetime.now().isoformat()
+    top10_songs = predict.predict_song(mel_path, 
+                                    nb_classes=nb_classes,
+                                    slice_length=157,
+                                    random_states=21,
+                                    activate=False,
+                                    csv_file_path=f'activations_{nb_classes}_157_21.csv',)
+
+    current_time_local = kst_time_now()
     song_ids = [song[0][2] for song in top10_songs]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
@@ -175,7 +195,17 @@ def recommendation_timbre():
     data = request.get_json()
     timbre_id = data['timbre_id']
     user_id = data['user_id']
+
+    response = requests.get(f'http://13.125.27.204:8080/users/{user_id}')
+    response_json = response.json()
+
+    if response.status_code != 200:
+        print("Failed to retrieve user info", response.status_code)
+        return jsonify({'isSuccess': False, 'message': 'Failed to retrieve user info'}), 400
     
+    result_json = response_json.get('result', {})
+    gender = result_json.get('gender')
+
     # timbre_id로 음색 파일 URL을 얻기 위해 외부 API 호출
     response = requests.get(f'http://13.125.27.204:8080/timbre/{timbre_id}')
     if response.status_code != 200:
@@ -193,10 +223,20 @@ def recommendation_timbre():
     else:
         print(f"Timbre file download failed: {response.status_code}")
 
-    top10_songs = predict.predict_song(timbre_file_path, activate=False)
+    if gender == 1:
+        nb_classes = 232
+    elif gender == 2:
+        nb_classes = 116
 
-    current_time_local = datetime.now().isoformat()
-    song_ids = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    top10_songs = predict.predict_song(timbre_file_path, 
+                                    nb_classes=nb_classes,
+                                    slice_length=157,
+                                    random_states=21,
+                                    activate=False,
+                                    csv_file_path=f'activations_{nb_classes}_157_21.csv',)
+
+    current_time_local = kst_time_now()
+    song_ids = [song[0][2] for song in top10_songs]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
     recommendations_api_url = 'http://13.125.27.204:8080/timbre-based-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
@@ -267,7 +307,21 @@ def recommendation_combined():
     response_json = response.json()
     timbre_urls = [item.get('timbreUrl') for item in response_json.get('result', [])]
 
-    current_time_local = datetime.now().isoformat()
+    if gender == 1:
+        nb_classes = 232
+    elif gender == 2:
+        nb_classes = 116
+
+    #top10_songs = predict.predict_song(timbre_file_path, 
+    #                                nb_classes=nb_classes,
+    #                                slice_length=157,
+    #                                random_states=21,
+    #                                activate=False,
+    #                                csv_file_path=f'activations_{nb_classes}_157_21.csv',)
+
+
+
+    current_time_local = kst_time_now()
     song_ids = [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
@@ -287,6 +341,23 @@ def recommendation_combined():
     else:
         print("Combine-recommendation failed: ", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Combine-recommendation failed'}), 400
+
+
+def kst_time_now():
+    # 서울 시간대 설정
+    KST = timezone(timedelta(hours=9))
+
+    # 현재 UTC 시간 가져오기
+    current_time_utc = datetime.now(timezone.utc)
+
+    # 서울 시간으로 변환
+    current_time_seoul = current_time_utc.astimezone(KST)
+
+    # 지정된 형식으로 변환
+    current_time_local = current_time_seoul.strftime('%Y-%m-%d %H:%M:%S')
+
+    return current_time_local
+
 
 
 if __name__ == '__main__':

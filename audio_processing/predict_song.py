@@ -49,7 +49,7 @@ def predict_song(song_path,
 
 
     # 모델의 입력부터 bottleneck layer까지의 서브 모델을 만듭니다.
-    bottleneck_model = Model(inputs=model.input, outputs=model.get_layer('dense').output)
+    bottleneck_model = Model(inputs=model.input, outputs=model.get_layer('dense_4').output)
 
     # 각 곡의 bottleneck layer 활성화 값을 저장할 리스트를 생성합니다.
     song_bottleneck_activations = []
@@ -126,21 +126,36 @@ def predict_song(song_path,
     sorted_similarities = sorted(aggregated_similarities.items(), key=lambda x: x[1], reverse=True)
 
     # Step 2: 유사도가 0.5를 넘는 항목들 필터링
-    over_half = [item for item in sorted_similarities if item[1] > 0.5]
+    over_80 = [item for item in sorted_similarities if item[1] > 0.8]
+    over_75 = [item for item in sorted_similarities if item[1] > 0.75]
+    over_70 = [item for item in sorted_similarities if item[1] > 0.7]
+    over_65 = [item for item in sorted_similarities if item[1] > 0.65]
+    over_60 = [item for item in sorted_similarities if item[1] > 0.6]
 
     # Step 3: 조건에 따라 랜덤 샘플 선택
-    if len(over_half) >= 50:
-        # 50개 이상인 경우 랜덤한 10개 선택
-        indices = sorted(random.sample(range(50), 10))
+    if len(over_80) >= 10:
+        indices = sorted(random.sample(range(len(over_80), 10)))
+    elif len(over_75) >= 10:
+        indices = sorted(random.sample(range(len(over_75), 10)))
+    elif len(over_70) >= 10:
+        indices = sorted(random.sample(range(len(over_70), 10)))
+    elif len(over_65) >= 10:
+        indices = sorted(random.sample(range(len(over_65), 10)))
+    elif len(over_60) >= 10:
+        indices = sorted(random.sample(range(len(over_60), 10)))
     else:
         # 50개 미만인 경우 상위 30개에서 랜덤한 10개 선택
-        indices = sorted(random.sample(range(min(30, len(sorted_similarities))), 10))
+        indices = sorted(random.sample(range(15), 10))
 
     # Step 4: 랜덤 샘플에서 (artist, song, song_id)만 추출
     #random_10_items = [item[0] for item in random_samples]
     random_10_items = [sorted_similarities[i] for i in indices]
 
     print(random_10_items)
+
+    top_30_similarities = sorted(aggregated_similarities.items(), key=lambda x: x[1], reverse=True)[:30]
+
+    print("top_30_similarities: ", top_30_similarities)
 
     return random_10_items
 
@@ -180,4 +195,17 @@ def load_activations_from_file(file_path="activations.csv"):
 
 
 if __name__ == '__main__':
-    predict_song('song_data_male/강균성 (노을)_%%-%%_그대 없는 날들_%%-%%_658', activate=False, slice_length=313, nb_classes=228, random_states=0)
+    nb_classes = 116
+    slice_length = 157
+    random_states = 21
+    csv_file = f"activations_{nb_classes}_{slice_length}_{random_states}.csv"
+    song_folder = "song_data_female"
+    artists = "artists_female_name"
+    predict_song('song_data_female/거미 (Gummy)_%%-%%_갈 곳이 없어_%%-%%_430.mp3', 
+                activate=False, 
+                slice_length=slice_length, 
+                nb_classes=nb_classes, 
+                random_states=random_states, 
+                csv_file_path=csv_file,
+                song_folder=song_folder,
+                artist_folder=artists)
