@@ -20,7 +20,7 @@ def midi_to_note_name(midi_note):
     return f"{note}{octave}"
 
 
-def mp3_to_mid(mp3_file_path):
+def mp3_to_mid(mp3_file_path, headless=True):
     # MP3 파일 경로와 다운로드 받을 위치
     download_dir = "./sample_midi"
 
@@ -34,7 +34,8 @@ def mp3_to_mid(mp3_file_path):
 
     # 브라우저 설정
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # 헤드리스 모드
+    if headless:
+        options.add_argument("--headless")  # 헤드리스 모드
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_experimental_option("prefs", {
@@ -88,9 +89,9 @@ def mp3_to_mid(mp3_file_path):
         return None
 
 
-def pitch_processing(file_path):
+def pitch_processing(file_path, headless=True):
     if file_path[-3:].lower() in ['mp3', 'aac']:
-        file_path = mp3_to_mid(file_path)
+        file_path = mp3_to_mid(file_path, headless=headless)
     else:
         print("잘못된 파일 형식")
         return -1, -1
@@ -165,27 +166,35 @@ def update_csv_with_pitch_data(csv_file, downloads_folder, batch_size=10):
     for file_name in os.listdir(downloads_folder):
         if file_name.endswith('.mp3'):
             artist, song_title, song_id = file_name[:-4].split("__")
+            song_id = song_id.strip('_')
 
             print(f"테스트 곡: {artist} - {song_title}.mp3")
             
-            file_path = os.path.join(downloads_folder, file_name)
-            highest_note, lowest_note = pitch_processing(file_path)
-            
-            # Update the CSV dataframe
             mask = df['index'] == int(song_id)
-            df.loc[mask, 'highest_note80'] = highest_note
-            df.loc[mask, 'lowest_note80'] = lowest_note
 
-            processed_count += 1
+            if not mask.any():  # mask의 모든 값이 False인 경우
+                print(f"Song ID {song_id} not found in the DataFrame.")
+            elif df.loc[mask, 'highest_note80'].isnull().all():# or df.loc[mask, 'highest_note80'].iloc[0] == -1:
+                file_path = os.path.join(downloads_folder, file_name)
+                highest_note, lowest_note = pitch_processing(file_path, headless=False)
+                
+                # Update the CSV dataframe
+                
+                df.loc[mask, 'highest_note80'] = highest_note
+                df.loc[mask, 'lowest_note80'] = lowest_note
 
-            # Save progress after processing each batch
-            if processed_count % batch_size == 0:
-                df.to_csv(csv_file, index=False, encoding='utf-8-sig')
-                print(f"Processed {processed_count} files and saved progress to CSV.")
+                processed_count += 1
+
+                # Save progress after processing each batch
+                if processed_count % batch_size == 0:
+                    df.to_csv(csv_file, index=False, encoding='utf-8-sig')
+                    print(f"Processed {processed_count} files and saved progress to CSV.")
+            else:
+                print("already processed")
     
     # Save the updated dataframe back to CSV
-    #df.to_csv(csv_file, index=False, encoding='utf-8-sig')
-    #print(f"Updated CSV file: {csv_file}")
+    df.to_csv(csv_file, index=False, encoding='utf-8-sig')
+    print(f"Updated CSV file: {csv_file}")
 
 
 if __name__ == '__main__':
@@ -216,8 +225,8 @@ if __name__ == '__main__':
 
     if csv_test:
         # 파일 경로와 폴더 경로 설정
-        csv_file = 'song_copy.csv'
-        downloads_folder = 'sample_vad'
+        csv_file = 'song_copy_pitch.csv'
+        downloads_folder = 'sample_data/all_pitch'
 
         # 업데이트 작업 수행
         update_csv_with_pitch_data(csv_file, downloads_folder)

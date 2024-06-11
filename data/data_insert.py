@@ -6,12 +6,15 @@ from mysql.connector import errorcode
 file_path = 'song_copy.csv'
 df = pd.read_csv(file_path, encoding='utf-8-sig')
 
-# song_id 열 추가: 1부터 시작하는 순차적인 정수 값
+# song_id 열 추가: index
 df['song_id'] = df['index']
 
 # gender_code -> artist_gender, genre_code -> genre 변환
 df['artist_gender'] = df['artist_gender_code']
 df['genre'] = df['genre_code']
+
+df['highest_note'] = df.apply(lambda row: row['highest_note'] if pd.isna(row['highest_note80']) else row['highest_note80'], axis=1)
+df['lowest_note'] = df.apply(lambda row: row['lowest_note'] if pd.isna(row['lowest_note80']) else row['lowest_note80'], axis=1)
 
 df['song_title'] = df.apply(lambda row: row['song_title'] + ' ' + row['feat_info'] if pd.notnull(row['feat_info']) else row['song_title'], axis=1)
 
@@ -52,6 +55,7 @@ try:
 
     # DataFrame 데이터를 MySQL 테이블에 삽입
     for index, row in db_df.iterrows():
+        #print(f"index: {index}, row: {row}")
         insert_query = """
         INSERT INTO song (artist_gender, genre, highest_note, lowest_note, song_id, artist, mr_vid_url, song_title, song_vid_url, album_image, karaoke_num)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)

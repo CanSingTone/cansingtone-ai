@@ -120,7 +120,7 @@ def slice_songs(X, Y, S, I, length=911):
     # Slice up songs using the length specified
     for i, song in enumerate(X):
         slices = int(song.shape[1] / length)
-        for j in range(slices - 1):
+        for j in range(slices):
             spectrogram.append(song[:, length * j:length * (j + 1)])
             artist.append(Y[i])
             song_name.append(S[i])

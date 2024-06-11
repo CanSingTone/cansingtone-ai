@@ -3,9 +3,14 @@
 *.wav
 *.mid
 *.aac
+*.txt
+
 request.py
+
+__pycache__/
 weights_song_split/
 artists/
+sample_data/
 song_data/
 song_data_male/
 song_data_female/
