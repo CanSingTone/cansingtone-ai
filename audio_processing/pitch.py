@@ -2,6 +2,7 @@ import os
 import shutil
 import mido
 import pandas as pd
+from pydub import AudioSegment
 
 import time
 from selenium import webdriver
@@ -68,7 +69,7 @@ def mp3_to_mid(mp3_file_path, headless=True):
         drop_area.send_keys(mp3_file_path_absolute)
 
         # 다운로드 버튼 클릭
-        download_button = WebDriverWait(driver, 240).until(
+        download_button = WebDriverWait(driver, 90).until(
             EC.element_to_be_clickable((By.XPATH, "//div[contains(text(), 'Download Midi')]"))
         )
         download_button.click()
@@ -94,11 +95,11 @@ def pitch_processing(file_path, headless=True):
         file_path = mp3_to_mid(file_path, headless=headless)
     else:
         print("잘못된 파일 형식")
-        return -1, -1
+        return -1, 121
     
     if file_path == None:
         print("접속 실패")
-        return -1, -1
+        return -1, 121
 
     midi = mido.MidiFile(file_path)
 
@@ -140,7 +141,7 @@ def pitch_processing(file_path, headless=True):
         print(f"최저 음 (MIDI): {min_pitch} -> 음정: {min_pitch_note}")
     else:
         max_pitch = -1
-        min_pitch = -1
+        min_pitch = 121
 
         print("최고음과 최저음을 찾을 수 없습니다.")
 
@@ -174,9 +175,22 @@ def update_csv_with_pitch_data(csv_file, downloads_folder, batch_size=10):
 
             if not mask.any():  # mask의 모든 값이 False인 경우
                 print(f"Song ID {song_id} not found in the DataFrame.")
-            elif df.loc[mask, 'highest_note80'].isnull().all():# or df.loc[mask, 'highest_note80'].iloc[0] == -1:
+            elif df.loc[mask, 'highest_note80'].isnull().all() or df.loc[mask, 'highest_note80'].iloc[0] == -1:
                 file_path = os.path.join(downloads_folder, file_name)
-                highest_note, lowest_note = pitch_processing(file_path, headless=False)
+
+                files = split_mp3(file_path, 8)
+
+                highest_note = -1
+                lowest_note = 121
+                for file in files:
+                    high_note, low_note = pitch_processing(file, headless=False)
+
+                    if high_note > highest_note:
+                        highest_note = high_note
+                    if low_note < lowest_note:
+                        lowest_note = low_note
+
+                #highest_note, lowest_note = pitch_processing(file_path, headless=False)
                 
                 # Update the CSV dataframe
                 
@@ -195,6 +209,31 @@ def update_csv_with_pitch_data(csv_file, downloads_folder, batch_size=10):
     # Save the updated dataframe back to CSV
     df.to_csv(csv_file, index=False, encoding='utf-8-sig')
     print(f"Updated CSV file: {csv_file}")
+
+
+def split_mp3(file_path, ratio):
+    files = []
+
+    # Load the audio file
+    audio = AudioSegment.from_mp3(file_path)
+
+    slice_length = len(audio) // ratio
+
+    os.makedirs('temp', exist_ok=True)
+
+    for i in range(ratio):
+        if i == ratio - 1:
+            slice = audio[(slice_length * i):]
+        else:
+            slice = audio[(slice_length * i):(slice_length * (i+1))]
+
+        slice_path = os.path.join("temp", f"slice_{i}.mp3")
+
+        slice.export(slice_path, format="mp3")
+
+        files.append(slice_path)
+
+    return files
 
 
 if __name__ == '__main__':
