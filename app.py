@@ -313,8 +313,11 @@ def recommendation_combined():
     pref_genre2 = result_json.get('pref_genre2')
     pref_genre3 = result_json.get('pref_genre3')
 
+    pref_genres = [pref_genre1, pref_genre2, pref_genre3]
+    pref_genres = [genre for genre in pref_genres if genre]
+
     params = {
-        'genres': [pref_genre1, pref_genre2, pref_genre3],
+        'genres': pref_genres,
         'highest_note': highest_note + 2,
         'lowest_note': lowest_note - 2
     }
@@ -375,7 +378,10 @@ def recommendation_combined():
                 # 유사도가 0.5를 넘는 항목만 필터링하여 합칩니다.
                 for key, similarity in loaded_similarities:
                     if similarity > 0.5:
-                        if similarity > similarities_combined[key]:
+                        if key in similarities_combined:
+                            if similarity > similarities_combined[key]:
+                                similarities_combined[key] = similarity
+                        else:
                             similarities_combined[key] = similarity
 
     sorted_similarities = sorted(similarities_combined.items(), key=lambda x: x[1], reverse=True)
