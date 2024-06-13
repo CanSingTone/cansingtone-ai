@@ -125,6 +125,12 @@ def predict_song(song_path,
     # Step 1: 유사도 값으로 정렬
     sorted_similarities = sorted(aggregated_similarities.items(), key=lambda x: x[1], reverse=True)
 
+    top_30_similarities = sorted_similarities[:30]
+
+    print("top_30_similarities: ", top_30_similarities)
+
+    return sorted_similarities
+
     # Step 2: 유사도가 0.5를 넘는 항목들 필터링
     over_80 = [item for item in sorted_similarities if item[1] > 0.8]
     over_75 = [item for item in sorted_similarities if item[1] > 0.75]
@@ -134,15 +140,15 @@ def predict_song(song_path,
 
     # Step 3: 조건에 따라 랜덤 샘플 선택
     if len(over_80) >= 10:
-        indices = sorted(random.sample(range(len(over_80), 10)))
+        indices = sorted(random.sample(range(len(over_80)), 10))
     elif len(over_75) >= 10:
-        indices = sorted(random.sample(range(len(over_75), 10)))
+        indices = sorted(random.sample(range(len(over_75)), 10))
     elif len(over_70) >= 10:
-        indices = sorted(random.sample(range(len(over_70), 10)))
+        indices = sorted(random.sample(range(len(over_70)), 10))
     elif len(over_65) >= 10:
-        indices = sorted(random.sample(range(len(over_65), 10)))
+        indices = sorted(random.sample(range(len(over_65)), 10))
     elif len(over_60) >= 10:
-        indices = sorted(random.sample(range(len(over_60), 10)))
+        indices = sorted(random.sample(range(len(over_60)), 10))
     else:
         # 50개 미만인 경우 상위 30개에서 랜덤한 10개 선택
         indices = sorted(random.sample(range(15), 10))
@@ -195,13 +201,13 @@ def load_activations_from_file(file_path="activations.csv"):
 
 
 if __name__ == '__main__':
-    nb_classes = 116
+    nb_classes = 232
     slice_length = 157
     random_states = 21
     csv_file = f"activations_{nb_classes}_{slice_length}_{random_states}.csv"
-    song_folder = "song_data_female"
-    artists = "artists_female_name"
-    predict_song('song_data_female/거미 (Gummy)_%%-%%_갈 곳이 없어_%%-%%_430.mp3', 
+    song_folder = "song_data_male"
+    artists = "artists_male_name"
+    predict_song('song_data_male/태진아_%%-%%_미안 미안해_%%-%%_1983.mp3', 
                 activate=False, 
                 slice_length=slice_length, 
                 nb_classes=nb_classes, 

@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 import requests
 import os
 from datetime import datetime, timedelta, timezone
+import pickle
+import random
 
 import audio_processing.pitch as pitch
 import audio_processing.timbre as timbre
@@ -155,15 +157,28 @@ def upload_timbre():
     elif gender == 2:
         nb_classes = 116
 
-    top10_songs = predict.predict_song(mel_path, 
+    sorted_similarities = predict.predict_song(mel_path, 
                                     nb_classes=nb_classes,
                                     slice_length=157,
                                     random_states=21,
                                     activate=False,
                                     csv_file_path=f'activations_{nb_classes}_157_21.csv',)
 
+    # 저장할 파일 경로를 설정합니다.
+    file_path = f'similarities_{timbre_id}.pkl'
+
+    # pickle을 사용해 딕셔너리를 파일로 저장합니다.
+    with open(file_path, 'wb') as file:
+        pickle.dump(sorted_similarities, file)
+
+    print(f'Aggregated similarities have been saved to {file_path}')
+
+    sorted_similarities = sorted(sorted_similarities.items(), key=lambda x: x[1], reverse=True)
+    indices = sorted(random.sample(range(15), 10))
+    top_10_songs = [sorted_similarities[i] for i in indices]
+
     current_time_local = kst_time_now()
-    song_ids = [song[0][2] for song in top10_songs]
+    song_ids = [song[0][2] for song in top_10_songs]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
     timbre_recommendations_url = 'http://13.125.27.204:8080/timbre-based-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
@@ -228,15 +243,28 @@ def recommendation_timbre():
     elif gender == 2:
         nb_classes = 116
 
-    top10_songs = predict.predict_song(timbre_file_path, 
-                                    nb_classes=nb_classes,
-                                    slice_length=157,
-                                    random_states=21,
-                                    activate=False,
-                                    csv_file_path=f'activations_{nb_classes}_157_21.csv',)
+    # 파일 경로를 설정합니다.
+    file_path = f'similarities_{timbre_id}.pkl'
+
+    # pickle을 사용해 파일에서 딕셔너리를 불러옵니다.
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as file:
+            loaded_aggregated_similarities = pickle.load(file)
+
+        sorted_similarities = sorted(loaded_aggregated_similarities.items(), key=lambda x: x[1], reverse=True)
+        indices = sorted(random.sample(range(15), 10))
+        top_10_songs = [sorted_similarities[i] for i in indices]
+    else:
+        top_10_songs = predict.predict_song(timbre_file_path, 
+                                        nb_classes=nb_classes,
+                                        slice_length=157,
+                                        random_states=21,
+                                        activate=False,
+                                        csv_file_path=f'activations_{nb_classes}_157_21.csv',)
+
 
     current_time_local = kst_time_now()
-    song_ids = [song[0][2] for song in top10_songs]
+    song_ids = [song[0][2] for song in top_10_songs]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
     recommendations_api_url = 'http://13.125.27.204:8080/timbre-based-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
@@ -285,13 +313,41 @@ def recommendation_combined():
     pref_genre2 = result_json.get('pref_genre2')
     pref_genre3 = result_json.get('pref_genre3')
 
+    params = {
+        'genres': [pref_genre1, pref_genre2, pref_genre3],
+        'highest_note': highest_note + 2,
+        'lowest_note': lowest_note - 2
+    }
+
+    response = requests.get('http://13.125.27.204:8080/songs/search', params=params)
+    if response.status_code != 200:
+        print("Failed to retrieve song info", response.status_code)
+        return jsonify({'isSuccess': False, 'message': 'Failed to retrieve song info'}), 400
+
+    response_json = response.json()
+    result = response_json.get('result', {})
+
+    song_pool = []
+    for song in result:
+        if song.get('artistGender') == gender:
+            song_id = song.get('songId')
+            song_pool.append(song_id)
+
     response = requests.get(f'http://13.125.27.204:8080/like/{user_id}')
     if response.status_code != 200:
         print("Failed to retrieve like info", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve like info'}), 400
     
     response_json = response.json()
-    like_songs = [item.get('songInfo') for item in response_json.get('result', [])]
+    #like_songs = [item.get('songInfo') for item in response_json.get('result', [])]
+
+    like_artists = []
+
+    # Iterate through each item in the result list
+    for item in response_json.get('result', []):
+        artist = item.get('songInfo', {}).get('artist')
+        if artist:
+            like_artists.append(artist)
 
     # 요청에 필요한 파라미터
     timbre_info_api = 'http://13.125.27.204:8080/timbre'
@@ -305,24 +361,54 @@ def recommendation_combined():
         return jsonify({'isSuccess': False, 'message': "Failed to retrieve user's timbre info"}), 400
     
     response_json = response.json()
-    timbre_urls = [item.get('timbreUrl') for item in response_json.get('result', [])]
-
-    if gender == 1:
-        nb_classes = 232
-    elif gender == 2:
-        nb_classes = 116
-
-    #top10_songs = predict.predict_song(timbre_file_path, 
-    #                                nb_classes=nb_classes,
-    #                                slice_length=157,
-    #                                random_states=21,
-    #                                activate=False,
-    #                                csv_file_path=f'activations_{nb_classes}_157_21.csv',)
+    timbre_ids = [item.get('timbreId') for item in response_json.get('result', [])]
 
 
+    similarities_combined = {}
+
+    # 모든 timbre_id에 대해 루프를 돌면서 각 .pkl 파일을 불러옵니다.
+    for timbre_id in timbre_ids:
+        file_path = f'similarities_{timbre_id}.pkl'
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as file:
+                loaded_similarities = pickle.load(file)
+                # 유사도가 0.5를 넘는 항목만 필터링하여 합칩니다.
+                for key, similarity in loaded_similarities.items():
+                    if similarity > 0.5:
+                        if similarity > similarities_combined[key]:
+                            similarities_combined[key] = similarity
+
+    sorted_similarities = sorted(similarities_combined.items(), key=lambda x: x[1], reverse=True)
+
+
+    # sorted_similarities의 각 항목을 업데이트
+    for key in list(sorted_similarities.keys()):
+        artist, song, song_id = key
+        similarity = sorted_similarities[key]
+        
+        # like_artists에 속해있는 가수라면 유사도에 1.1을 곱함
+        for like_artist in like_artists:
+            if artist == like_artist or artist in like_artist:
+                similarity *= 1.1
+        
+        # song_pool에 없는 song_id라면 유사도에 0을 곱함
+        if song_id not in song_pool:
+            similarity = 0
+        
+        # 업데이트된 유사도를 다시 저장
+        sorted_similarities[key] = similarity
+
+    final_sorted_similarities = sorted(sorted_similarities.items(), key=lambda x: x[1], reverse=True)
+
+    indices = sorted(random.sample(range(15), 10))
+    top_10_songs = [final_sorted_similarities[i] for i in indices]
 
     current_time_local = kst_time_now()
-    song_ids = [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+    if len(top_10_songs) < 10:
+        indices = random.sample(range(len(song_pool)), 10)
+        song_ids = [song_pool[i] for i in indices]
+    else:
+        song_ids = [song[0][2] for song in top_10_songs]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
     recommendations_api_url = 'http://13.125.27.204:8080/combine-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
