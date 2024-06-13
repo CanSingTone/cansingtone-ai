@@ -173,9 +173,9 @@ def upload_timbre():
 
     print(f'Aggregated similarities have been saved to {file_path}')
 
-    sorted_similarities = sorted(sorted_similarities.items(), key=lambda x: x[1], reverse=True)
+    final_sorted_similarities = sorted(sorted_similarities, key=lambda x: x[1], reverse=True)
     indices = sorted(random.sample(range(15), 10))
-    top_10_songs = [sorted_similarities[i] for i in indices]
+    top_10_songs = [final_sorted_similarities[i] for i in indices]
 
     current_time_local = kst_time_now()
     song_ids = [song[0][2] for song in top_10_songs]
@@ -251,7 +251,7 @@ def recommendation_timbre():
         with open(file_path, 'rb') as file:
             loaded_aggregated_similarities = pickle.load(file)
 
-        sorted_similarities = sorted(loaded_aggregated_similarities.items(), key=lambda x: x[1], reverse=True)
+        sorted_similarities = sorted(loaded_aggregated_similarities, key=lambda x: x[1], reverse=True)
         indices = sorted(random.sample(range(15), 10))
         top_10_songs = [sorted_similarities[i] for i in indices]
     else:
@@ -373,18 +373,18 @@ def recommendation_combined():
             with open(file_path, 'rb') as file:
                 loaded_similarities = pickle.load(file)
                 # 유사도가 0.5를 넘는 항목만 필터링하여 합칩니다.
-                for key, similarity in loaded_similarities.items():
+                for key, similarity in loaded_similarities:
                     if similarity > 0.5:
                         if similarity > similarities_combined[key]:
                             similarities_combined[key] = similarity
 
     sorted_similarities = sorted(similarities_combined.items(), key=lambda x: x[1], reverse=True)
 
-
+    final_similarities = {}
     # sorted_similarities의 각 항목을 업데이트
-    for key in list(sorted_similarities.keys()):
+    for key, similarity in sorted_similarities:
         artist, song, song_id = key
-        similarity = sorted_similarities[key]
+        similarity = similarity
         
         # like_artists에 속해있는 가수라면 유사도에 1.1을 곱함
         for like_artist in like_artists:
@@ -396,9 +396,9 @@ def recommendation_combined():
             similarity = 0
         
         # 업데이트된 유사도를 다시 저장
-        sorted_similarities[key] = similarity
+        final_similarities[key] = similarity
 
-    final_sorted_similarities = sorted(sorted_similarities.items(), key=lambda x: x[1], reverse=True)
+    final_sorted_similarities = sorted(final_similarities.items(), key=lambda x: x[1], reverse=True)
 
     indices = sorted(random.sample(range(15), 10))
     top_10_songs = [final_sorted_similarities[i] for i in indices]
