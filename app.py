@@ -405,19 +405,18 @@ def recommendation_combined():
         final_similarities[key] = similarity
 
     final_sorted_similarities = sorted(final_similarities.items(), key=lambda x: x[1], reverse=True)
-
-    indices = sorted(random.sample(range(15), 10))
-    top_10_songs = [final_sorted_similarities[i] for i in indices]
-
-    current_time_local = kst_time_now()
-    if len(top_10_songs) < 10:
+    if len(final_sorted_similarities) >= 15:
+        indices = sorted(random.sample(range(15), 10))
+        top_10_songs = [final_sorted_similarities[i] for i in indices]
+        song_ids = [song[0][2] for song in top_10_songs]
+    else:
         indices = random.sample(range(len(song_pool)), 10)
         song_ids = [song_pool[i] for i in indices]
-    else:
-        song_ids = [song[0][2] for song in top_10_songs]
+
+    current_time_local = kst_time_now()
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
-    recommendations_api_url = 'http://13.125.27.204:8080/combine-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
+    recommendations_api_url = 'http://13.125.27.204:8080/combined-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
     recommendation = {
         'song_ids': song_ids,
         'user_id': user_id,
