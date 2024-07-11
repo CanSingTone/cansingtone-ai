@@ -7,8 +7,6 @@ from numpy.random import RandomState
 import librosa
 import librosa.display
 
-from sklearn.model_selection import train_test_split
-
 
 def create_dataset(artist_folder='artists', save_folder='song_data',
                    sr=16000, n_mels=128,
@@ -80,32 +78,6 @@ def load_dataset(song_folder_name='song_data',
             song_id.append(loaded_song[3])
 
     return artist, spectrogram, song_name, song_id
-
-
-def load_dataset_song_split(song_folder_name='song_data',
-                            artist_folder='artists',
-                            nb_classes=20,
-                            test_split_size=0.1,
-                            validation_split_size=0.1,
-                            random_state=42):
-                            
-    Y, X, S = load_dataset(song_folder_name=song_folder_name,
-                           artist_folder=artist_folder,
-                           nb_classes=nb_classes,
-                           random_state=random_state)
-    # train and test split
-    X_train, X_test, Y_train, Y_test, S_train, S_test = train_test_split(
-        X, Y, S, test_size=test_split_size, stratify=Y,
-        random_state=random_state)
-
-    # Create a validation to be used to track progress
-    X_train, X_val, Y_train, Y_val, S_train, S_val = train_test_split(
-        X_train, Y_train, S_train, test_size=validation_split_size,
-        shuffle=True, stratify=Y_train, random_state=random_state)
-
-    return Y_train, X_train, S_train, \
-           Y_test, X_test, S_test, \
-           Y_val, X_val, S_val
 
 
 def slice_songs(X, Y, S, I, length=911):
