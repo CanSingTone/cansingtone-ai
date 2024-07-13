@@ -52,7 +52,7 @@ def upload_pitch():
         print("Pitch processing failed")
         return jsonify({'isSuccess': False, 'message': 'Pitch processing failed'}), 400
 
-    pitch_url = f'http://13.125.27.204:8080/users/{user_id}/vocal-range'  # 서버주소는 애플리케이션이 실행되는 주소
+    pitch_url = f'http://15.165.137.141:8080/users/{user_id}/vocal-range'  # 서버주소는 애플리케이션이 실행되는 주소
     params = {
         'vocal_range_high': highest_note,
         'vocal_range_low': lowest_note
@@ -64,7 +64,7 @@ def upload_pitch():
         print("Pitch upload failed:", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Pitch upload failed'}), 400
     
-    pitch_recommendation_url = 'http://13.125.27.204:8080/range-based-recommendations'
+    pitch_recommendation_url = 'http://15.165.137.141:8080/range-based-recommendations'
     data = {
         'user_id': user_id,
         'vocal_range_high': highest_note,
@@ -95,7 +95,7 @@ def upload_timbre():
     file = request.files['file']  # This is a FileStorage object
     user_id = request.form['user_id']
 
-    response = requests.get(f'http://13.125.27.204:8080/users/{user_id}')
+    response = requests.get(f'http://15.165.137.141:8080/users/{user_id}')
     response_json = response.json()
 
     if response.status_code != 200:
@@ -119,7 +119,7 @@ def upload_timbre():
 
     mel_path = timbre.timbre_processing(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-    s3_url = 'http://13.125.27.204:8080/upload'
+    s3_url = 'http://15.165.137.141:8080/upload'
     files = {'file': open(mel_path, 'rb')}
 
     response = requests.post(s3_url, files=files)
@@ -136,7 +136,7 @@ def upload_timbre():
     timbre_url = response_data.get("uploadTimbre")
 
     # s3 url과 유저id를 보내 db에 넣고 그 응답으로 오는 음색id 확인
-    timbre_api_url = 'http://13.125.27.204:8080/timbre'  # 서버주소는 애플리케이션이 실행되는 주소
+    timbre_api_url = 'http://15.165.137.141:8080/timbre'  # 서버주소는 애플리케이션이 실행되는 주소
     timbre_info = {
         'timbre_url': timbre_url,
         'user_id': user_id
@@ -181,7 +181,7 @@ def upload_timbre():
     song_ids = [song[0][2] for song in top_10_songs]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
-    timbre_recommendations_url = 'http://13.125.27.204:8080/timbre-based-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
+    timbre_recommendations_url = 'http://15.165.137.141:8080/timbre-based-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
     recommendation = {
         'song_ids': song_ids,
         'user_id': user_id,
@@ -211,7 +211,7 @@ def recommendation_timbre():
     timbre_id = data['timbre_id']
     user_id = data['user_id']
 
-    response = requests.get(f'http://13.125.27.204:8080/users/{user_id}')
+    response = requests.get(f'http://15.165.137.141:8080/users/{user_id}')
     response_json = response.json()
 
     if response.status_code != 200:
@@ -222,7 +222,7 @@ def recommendation_timbre():
     gender = result_json.get('gender')
 
     # timbre_id로 음색 파일 URL을 얻기 위해 외부 API 호출
-    response = requests.get(f'http://13.125.27.204:8080/timbre/{timbre_id}')
+    response = requests.get(f'http://15.165.137.141:8080/timbre/{timbre_id}')
     if response.status_code != 200:
         print("Failed to retrieve timbre URL", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve timbre URL'}), 400
@@ -267,7 +267,7 @@ def recommendation_timbre():
     song_ids = [song[0][2] for song in top_10_songs]
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
-    recommendations_api_url = 'http://13.125.27.204:8080/timbre-based-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
+    recommendations_api_url = 'http://15.165.137.141:8080/timbre-based-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
     recommendation = {
         'song_ids': song_ids,
         'user_id': user_id,
@@ -296,7 +296,7 @@ def recommendation_combined():
     data = request.get_json()
     user_id = data['user_id']
 
-    response = requests.get(f'http://13.125.27.204:8080/users/{user_id}')
+    response = requests.get(f'http://15.165.137.141:8080/users/{user_id}')
     response_json = response.json()
     code = response_json.get('code')
     print("Response code: ", code, type(code))
@@ -322,7 +322,7 @@ def recommendation_combined():
         'lowest_note': lowest_note - 2
     }
 
-    response = requests.get('http://13.125.27.204:8080/songs/search', params=params)
+    response = requests.get('http://15.165.137.141:8080/songs/search', params=params)
     if response.status_code != 200:
         print("Failed to retrieve song info", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve song info'}), 400
@@ -336,7 +336,7 @@ def recommendation_combined():
             song_id = song.get('songId')
             song_pool.append(song_id)
 
-    response = requests.get(f'http://13.125.27.204:8080/like/{user_id}')
+    response = requests.get(f'http://15.165.137.141:8080/like/{user_id}')
     if response.status_code != 200:
         print("Failed to retrieve like info", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve like info'}), 400
@@ -353,7 +353,7 @@ def recommendation_combined():
             like_artists.append(artist)
 
     # 요청에 필요한 파라미터
-    timbre_info_api = 'http://13.125.27.204:8080/timbre'
+    timbre_info_api = 'http://15.165.137.141:8080/timbre'
     params = {
         'user_id': user_id
     }
@@ -416,7 +416,7 @@ def recommendation_combined():
     current_time_local = kst_time_now()
 
     # top10_songs에 song_id 정보 있으면 그걸로 song_id 대체하면 됨
-    recommendations_api_url = 'http://13.125.27.204:8080/combined-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
+    recommendations_api_url = 'http://15.165.137.141:8080/combined-recommendations'  # 서버주소는 애플리케이션이 실행되는 주소
     recommendation = {
         'song_ids': song_ids,
         'user_id': user_id,
