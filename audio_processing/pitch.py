@@ -238,8 +238,15 @@ def split_mp3(file_path, ratio):
 
 if __name__ == '__main__':
     
+    pitch_test = True
     api_test = False
-    csv_test = True
+    csv_test = False
+
+    if pitch_test:
+        file_path = "test_data/test.mp3"
+        highest_note, lowest_note = pitch_processing(file_path)
+
+        print(highest_note, lowest_note)
 
     if api_test:
         file_path = "sample_data/test.mp3"

@@ -60,9 +60,11 @@ def upload_pitch():
 
     response = requests.patch(pitch_url, params=params)
 
-    if response.status_code != 200:
-        print("Pitch upload failed:", response.status_code)
-        return jsonify({'isSuccess': False, 'message': 'Pitch upload failed'}), 400
+    if response.status_code == 200:
+        print("Pitch Upload Successfully")
+    else:
+        print("Pitch Upload Failed:", response.status_code)
+        return jsonify({'isSuccess': False, 'message': 'Pitch Upload Failed'}), 400
     
     pitch_recommendation_url = 'http://15.165.137.141:8080/range-based-recommendations'
     data = {
@@ -98,7 +100,9 @@ def upload_timbre():
     response = requests.get(f'http://15.165.137.141:8080/users/{user_id}')
     response_json = response.json()
 
-    if response.status_code != 200:
+    if response.status_code == 200:
+        print("Retrieve User Info Successfully")
+    else:
         print("Failed to retrieve user info", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve user info'}), 400
 
@@ -125,9 +129,11 @@ def upload_timbre():
     response = requests.post(s3_url, files=files)
 
     # 응답 처리
-    if response.status_code != 200:
-        print("Timbre upload failed:", response.status_code)
-        return jsonify({'isSuccess': False, 'message': 'Timbre upload failed'}), 400
+    if response.status_code == 200:
+        print("Timbre Upload Successfully")
+    else:
+        print("Timbre Upload Failed:", response.status_code)
+        return jsonify({'isSuccess': False, 'message': 'Timbre Upload Failed'}), 400
     
     # JSON 응답 데이터 파싱
     response_data = response.json()
@@ -145,9 +151,11 @@ def upload_timbre():
     response = requests.post(timbre_api_url, data=timbre_info)
 
     # 응답 처리
-    if response.status_code != 200:
-        print("Timbre URL upload failed: ", response.status_code)
-        return jsonify({'isSuccess': False, 'message': 'Timbre URL upload failed'}), 400
+    if response.status_code == 200:
+        print("Timbre URL Upload Successfully")
+    else:
+        print("Timbre URL Upload Failed: ", response.status_code)
+        return jsonify({'isSuccess': False, 'message': 'Timbre URL Upload Failed'}), 400
     
     response_json = response.json()
     timbre_id = response_json.get('result', {}).get('timbreId')
@@ -214,7 +222,9 @@ def recommendation_timbre():
     response = requests.get(f'http://15.165.137.141:8080/users/{user_id}')
     response_json = response.json()
 
-    if response.status_code != 200:
+    if response.status_code == 200:
+        print("Retrieve User Info Successfully")
+    else:
         print("Failed to retrieve user info", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve user info'}), 400
     
@@ -223,7 +233,9 @@ def recommendation_timbre():
 
     # timbre_id로 음색 파일 URL을 얻기 위해 외부 API 호출
     response = requests.get(f'http://15.165.137.141:8080/timbre/{timbre_id}')
-    if response.status_code != 200:
+    if response.status_code == 200:
+        print("Retrieve Timbre URL Successfully")
+    else:
         print("Failed to retrieve timbre URL", response.status_code)
         return jsonify({'isSuccess': False, 'message': 'Failed to retrieve timbre URL'}), 400
 
@@ -235,8 +247,10 @@ def recommendation_timbre():
     if response.status_code == 200:
         with open(timbre_file_path, 'wb') as file:
             file.write(response.content)
+
+        print("Timbre File Download Successfully")
     else:
-        print(f"Timbre file download failed: {response.status_code}")
+        print(f"Timbre File Download Failed: {response.status_code}")
 
     if gender == 1:
         nb_classes = 232
